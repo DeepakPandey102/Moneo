@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Coins, Mail, Lock, User, MailCheck } from "lucide-react";
@@ -14,12 +14,24 @@ export default function Register() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [confirmationSent, setConfirmationSent] = useState(false);
+  const [sentToEmail, setSentToEmail] = useState("");
+  const formRef = useRef(null);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+
+    // Same fix as Login.jsx: browser autofill can fill fields visually
+    // without React ever seeing an onChange, leaving state stuck at "".
+    // Reading straight from the form at submit time avoids that entirely.
+    const formData = new FormData(formRef.current);
+    const finalName = (formData.get("name") || name || "").trim();
+    const finalEmail = (formData.get("email") || email || "").trim();
+    const finalPassword = formData.get("password") || password || "";
+    const finalConfirm = formData.get("confirmPassword") || confirmPassword || "";
+
     setSubmitting(true);
-    const result = await register(name, email, password, confirmPassword);
+    const result = await register(finalName, finalEmail, finalPassword, finalConfirm);
     setSubmitting(false);
 
     if (!result.ok) { setError(t(result.error)); return; }
@@ -28,6 +40,7 @@ export default function Register() {
       // Supabase requires the user to click a link in their email before
       // they can log in — there's no session yet, so we can't navigate
       // into the app. Show a clear "check your email" screen instead.
+      setSentToEmail(finalEmail);
       setConfirmationSent(true);
     } else {
       // Auto-confirm was enabled on this Supabase project — session
@@ -50,8 +63,8 @@ export default function Register() {
           </h1>
           <p style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
             {lang === "ko"
-              ? `${email} 주소로 인증 메일을 보냈어요. 메일함에서 링크를 클릭하면 로그인할 수 있어요.`
-              : `We sent a confirmation link to ${email}. Click the link in that email, then come back here to log in.`}
+              ? `${sentToEmail} 주소로 인증 메일을 보냈어요. 메일함에서 링크를 클릭하면 로그인할 수 있어요.`
+              : `We sent a confirmation link to ${sentToEmail}. Click the link in that email, then come back here to log in.`}
           </p>
           <Link to="/login" className="btn-primary btn-block" style={{ display: "inline-flex", justifyContent: "center" }}>
             {t("login")}
@@ -72,23 +85,23 @@ export default function Register() {
 
         <h1 className="auth-title">{t("createAccount")}</h1>
 
-        <form onSubmit={handleSubmit}>
+        <form ref={formRef} onSubmit={handleSubmit}>
           <div className="input-group">
             <User size={16} className="input-icon" />
-            <input type="text" placeholder={t("fullName")} value={name} onChange={(e) => setName(e.target.value)} required />
+            <input name="name" type="text" placeholder={t("fullName")} value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
           <div className="input-group">
             <Mail size={16} className="input-icon" />
-            <input type="email" placeholder={t("email")} value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input name="email" type="email" placeholder={t("email")} value={email} onChange={(e) => setEmail(e.target.value)} required />
           </div>
           <div className="input-group">
             <Lock size={16} className="input-icon" />
-            <input type="password" placeholder={t("password")} value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input name="password" type="password" placeholder={t("password")} value={password} onChange={(e) => setPassword(e.target.value)} required />
           </div>
           <p className="input-hint">{t("passwordHint")}</p>
           <div className="input-group">
             <Lock size={16} className="input-icon" />
-            <input type="password" placeholder={t("confirmPassword")} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+            <input name="confirmPassword" type="password" placeholder={t("confirmPassword")} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
           </div>
           {error && <div className="form-error">{error}</div>}
           <button type="submit" className="btn-primary btn-block" disabled={submitting}>

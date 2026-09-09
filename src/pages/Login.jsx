@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Coins, Mail, Lock } from "lucide-react";
@@ -11,12 +11,27 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const formRef = useRef(null);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+
+    // Browser autofill (and some password managers) can fill inputs
+    // visually without firing React's onChange — which leaves email/password
+    // state stuck at "" even though the fields look filled. Reading directly
+    // from the form at submit time avoids that mismatch entirely.
+    const formData = new FormData(formRef.current);
+    const finalEmail = (formData.get("email") || email || "").trim();
+    const finalPassword = formData.get("password") || password || "";
+
+    if (!finalEmail || !finalPassword) {
+      setError(lang === "ko" ? "이메일과 비밀번호를 모두 입력해주세요." : "Please enter both your email and password.");
+      return;
+    }
+
     setSubmitting(true);
-    const result = await login(email, password);
+    const result = await login(finalEmail, finalPassword);
     setSubmitting(false);
     if (!result.ok) { setError(t(result.error)); return; }
     navigate("/app/dashboard");
@@ -33,14 +48,14 @@ export default function Login() {
 
         <h1 className="auth-title">{t("welcomeBack")}</h1>
 
-        <form onSubmit={handleSubmit}>
+        <form ref={formRef} onSubmit={handleSubmit}>
           <div className="input-group">
             <Mail size={16} className="input-icon" />
-            <input type="email" placeholder={t("email")} value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input name="email" type="email" placeholder={t("email")} value={email} onChange={(e) => setEmail(e.target.value)} required />
           </div>
           <div className="input-group">
             <Lock size={16} className="input-icon" />
-            <input type="password" placeholder={t("password")} value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input name="password" type="password" placeholder={t("password")} value={password} onChange={(e) => setPassword(e.target.value)} required />
           </div>
           {error && <div className="form-error">{error}</div>}
           <button type="submit" className="btn-primary btn-block" disabled={submitting}>
