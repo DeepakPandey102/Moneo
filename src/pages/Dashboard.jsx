@@ -19,7 +19,7 @@ function monthYearLabel(lang) {
   return now.toLocaleDateString(lang === "ko" ? "ko-KR" : "en-US", { month: "long", year: "numeric" });
 }
 
-const COLORS = ["#DC2626", "#F97316", "#EAB308", "#16A34A", "#3B82F6", "#8B5CF6", "#EC4899", "#06B6D4", "#9CA3AF"];
+const COLORS = ["#F87171", "#F97316", "#EAB308", "#34D399", "#60A5FA", "#8B5CF6", "#EC4899", "#06B6D4", "#8890A3"];
 
 export default function Dashboard() {
   const { data, lang, t, user, assistantMode, unlockAchievement } = useApp();
@@ -97,7 +97,7 @@ export default function Dashboard() {
         {streak > 0 && (
           <motion.div className="streak-badge" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
             <motion.span animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }} style={{ display: "inline-flex" }}>
-              <Flame size={15} color="#E0A83B" fill="#E0A83B" />
+              <Flame size={15} color="#FBBF24" fill="#FBBF24" />
             </motion.span>
             {streak} {t("days")} {t("streak")}
           </motion.div>
@@ -118,19 +118,19 @@ export default function Dashboard() {
 
       <div className="stat-grid">
         <StatCard
-          label={t("income")} value={currency(income, lang)} icon={TrendingUp} color="#16A34A" accentBar="#16A34A"
+          label={t("income")} value={currency(income, lang)} icon={TrendingUp} color="#34D399" accentBar="#34D399"
           sub={expenseChangePct === null ? undefined : undefined}
         />
         <StatCard
-          label={t("expenses")} value={currency(expenses, lang)} icon={TrendingDown} color="#DC2626" accentBar="#DC2626"
+          label={t("expenses")} value={currency(expenses, lang)} icon={TrendingDown} color="#F87171" accentBar="#F87171"
           sub={expenseChangePct !== null ? `${expenseChangePct > 0 ? "+" : ""}${expenseChangePct}% ${lang === "ko" ? "지난달 대비" : "from last month"}` : undefined}
         />
         <StatCard
-          label={t("savings")} value={currency(saved, lang)} icon={PiggyBank} color="#3B82F6" accentBar="#3B82F6"
+          label={t("savings")} value={currency(saved, lang)} icon={PiggyBank} color="#60A5FA" accentBar="#60A5FA"
           sub={income > 0 ? `${savingsRatePct}% ${lang === "ko" ? "수입 대비" : "of income"}` : undefined}
         />
         <StatCard
-          label={lang === "ko" ? "예산 상태" : "Budget Status"} value={budgetOverall.label === "none" ? "—" : `${budgetOverall.pct}%`} icon={Target} color="#16A34A" accentBar="#16A34A"
+          label={lang === "ko" ? "예산 상태" : "Budget Status"} value={budgetOverall.label === "none" ? "—" : `${budgetOverall.pct}%`} icon={Target} color="#34D399" accentBar="#34D399"
           sub={budgetStatusText}
         />
       </div>
@@ -175,14 +175,14 @@ export default function Dashboard() {
           <div style={{ width: "100%", height: 260 }}>
             <ResponsiveContainer>
               <LineChart data={trend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#EEF0F4" />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#9CA3AF" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#9CA3AF" }} width={44} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#8890A3" }} />
+                <YAxis tick={{ fontSize: 11, fill: "#8890A3" }} width={44} />
                 <Tooltip formatter={(v) => currency(v, lang)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="income" name={t("income")} stroke="#16A34A" strokeWidth={2.5} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="expenses" name={t("expenses")} stroke="#DC2626" strokeWidth={2.5} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="savings" name={t("savings")} stroke="#3B82F6" strokeWidth={2.5} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="income" name={t("income")} stroke="#34D399" strokeWidth={2.5} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="expenses" name={t("expenses")} stroke="#F87171" strokeWidth={2.5} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="savings" name={t("savings")} stroke="#60A5FA" strokeWidth={2.5} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -199,9 +199,9 @@ export default function Dashboard() {
             <div key={b.id} style={{ marginBottom: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
                 <span>{categoryLabel(b.category, lang)}</span>
-                <span style={{ color: "#6B7280" }}>{currency(b.spent, lang)} / {currency(b.limit, lang)}</span>
+                <span style={{ color: "#9AA1B2" }}>{currency(b.spent, lang)} / {currency(b.limit, lang)}</span>
               </div>
-              <ProgressBar pct={b.pct} color={b.status === "over" ? "#DC2626" : b.status === "close" ? "#E0A83B" : "#16A34A"} />
+              <ProgressBar pct={b.pct} color={b.status === "over" ? "#F87171" : b.status === "close" ? "#FBBF24" : "#34D399"} />
             </div>
           ))}
         </div>
@@ -215,9 +215,9 @@ export default function Dashboard() {
             <div key={g.id} style={{ marginBottom: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
                 <span>{g.name}</span>
-                <span style={{ color: "#6B7280" }}>{currency(g.current, lang)} / {currency(g.target, lang)}</span>
+                <span style={{ color: "#9AA1B2" }}>{currency(g.current, lang)} / {currency(g.target, lang)}</span>
               </div>
-              <ProgressBar pct={(g.current / g.target) * 100} color="#3B82F6" />
+              <ProgressBar pct={(g.current / g.target) * 100} color="#60A5FA" />
             </div>
           ))}
         </div>

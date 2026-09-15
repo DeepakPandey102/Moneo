@@ -10,7 +10,7 @@ import {
 } from "../utils/calculations";
 import { categoryLabel } from "../data/categories";
 
-const COLORS = ["#16A34A", "#2FAE66", "#E0A83B", "#9B6BF2", "#E0563B", "#2BB4C9", "#EC6FA8", "#6B8CFF", "#9CA3AF"];
+const COLORS = ["#34D399", "#10B981", "#FBBF24", "#A78BFA", "#F87171", "#2BB4C9", "#EC6FA8", "#6B8CFF", "#8890A3"];
 
 export default function Analytics() {
   const { data, lang, t } = useApp();
@@ -59,13 +59,13 @@ export default function Analytics() {
           <div style={{ height: 240 }}>
             <ResponsiveContainer>
               <BarChart data={incomeExpenseData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F0F1F4" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(v) => currency(v, lang)} />
                 <Legend />
-                <Bar dataKey="income" fill="#2FAE66" radius={[6, 6, 0, 0]} name={t("income")} />
-                <Bar dataKey="expenses" fill="#E0563B" radius={[6, 6, 0, 0]} name={t("expenses")} />
+                <Bar dataKey="income" fill="#10B981" radius={[6, 6, 0, 0]} name={t("income")} />
+                <Bar dataKey="expenses" fill="#F87171" radius={[6, 6, 0, 0]} name={t("expenses")} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -79,11 +79,11 @@ export default function Analytics() {
             <div style={{ height: 220 }}>
               <ResponsiveContainer>
                 <LineChart data={daily}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F0F1F4" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
                   <XAxis dataKey="day" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} width={70} />
                   <Tooltip formatter={(v) => currency(v, lang)} />
-                  <Line type="monotone" dataKey="cumulative" stroke="#16A34A" strokeWidth={2.5} dot={false} />
+                  <Line type="monotone" dataKey="cumulative" stroke="#34D399" strokeWidth={2.5} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -95,11 +95,11 @@ export default function Analytics() {
           <div style={{ height: 220 }}>
             <ResponsiveContainer>
               <BarChart data={comparisonData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F0F1F4" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} width={70} />
                 <Tooltip formatter={(v) => currency(v, lang)} />
-                <Bar dataKey="amount" fill="#9B6BF2" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="amount" fill="#A78BFA" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

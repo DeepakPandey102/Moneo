@@ -10,7 +10,7 @@ function StatusDot({ up }) {
 }
 
 export default function Settings() {
-  const { user, data, lang, setLanguage, assistantMode, setAssistantMode, generateSample, clearData, showToast, t, logout } = useApp();
+  const { user, data, lang, setLanguage, assistantMode, setAssistantMode, generateSample, clearData, showToast, logout, t } = useApp();
   const [confirmAction, setConfirmAction] = useState(null); // null | "sample" | "clear" | "logout"
   const [status, setStatus] = useState({ backendUp: null, geminiConfigured: null });
   const [checking, setChecking] = useState(false);
@@ -24,18 +24,16 @@ export default function Settings() {
 
   useEffect(() => { checkStatus(); }, [checkStatus]);
 
-  async function handleConfirm() {
+  function handleConfirm() {
     if (confirmAction === "sample") {
-      await generateSample();
+      generateSample();
       showToast(lang === "ko" ? "샘플 데이터가 생성됐어요." : "Sample month generated.");
     } else if (confirmAction === "clear") {
-      await clearData();
+      clearData();
       showToast(lang === "ko" ? "모든 데이터가 삭제됐어요." : "All data cleared.");
     } else if (confirmAction === "logout") {
-      await logout();
-      // No manual redirect needed — the route guard in App.jsx automatically
-      // sends you to /login the moment the user becomes null.
-      return;
+      logout();
+      return; // component is about to unmount — nothing left to reset
     }
     setConfirmAction(null);
   }
@@ -55,21 +53,15 @@ export default function Settings() {
           <span>{t("email")}</span><span className="settings-value">{user?.email}</span>
         </div>
         {confirmAction === "logout" ? (
-          <div style={{ marginTop: 12 }}>
-            <p style={{ fontSize: 13, marginBottom: 10, color: "var(--muted)" }}>
-              {lang === "ko" ? "로그아웃 하시겠어요?" : "Log out of Moneo?"}
-            </p>
+          <div className="logout-confirm-row">
+            <span>{lang === "ko" ? "로그아웃 하시겠어요?" : "Log out of Moneo?"}</span>
             <div style={{ display: "flex", gap: 8 }}>
               <button className="btn-danger" onClick={handleConfirm}>{t("confirm")}</button>
               <button className="btn-secondary" onClick={() => setConfirmAction(null)}>{t("cancel")}</button>
             </div>
           </div>
         ) : (
-          <button
-            className="btn-danger-outline"
-            style={{ marginTop: 12 }}
-            onClick={() => setConfirmAction("logout")}
-          >
+          <button className="btn-danger-outline btn-block settings-logout-btn" onClick={() => setConfirmAction("logout")}>
             <LogOut size={15} /> {t("logout")}
           </button>
         )}
@@ -169,7 +161,7 @@ export default function Settings() {
       <div className="card">
         <div className="card-title-row"><span className="card-title"><Wand2 size={15} style={{ marginRight: 6, verticalAlign: -2 }} />{t("demoTools")}</span></div>
         <p className="arch-note" style={{ marginBottom: 12 }}>{t("demoToolsDesc")}</p>
-        {confirmAction !== "sample" && confirmAction !== "clear" ? (
+        {!confirmAction ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <button className="btn-secondary" style={{ justifyContent: "flex-start" }} onClick={() => setConfirmAction("sample")}>
               <RotateCcw size={15} style={{ marginRight: 8 }} /> {t("generateSampleMonth")}

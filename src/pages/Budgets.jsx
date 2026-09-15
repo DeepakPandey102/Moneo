@@ -53,7 +53,7 @@ export default function Budgets() {
               </div>
               <button className="icon-btn-ghost" onClick={() => deleteBudget(b.id)}><Trash2 size={14} /></button>
             </div>
-            <ProgressBar pct={b.pct} color={b.status === "over" ? "#E0563B" : b.status === "close" ? "#E0A83B" : "#2FAE66"} />
+            <ProgressBar pct={b.pct} color={b.status === "over" ? "#F87171" : b.status === "close" ? "#FBBF24" : "#10B981"} />
             <div className="budget-card-footer">
               <span>{t("remaining")}: {currency(Math.max(0, b.remaining), lang)}</span>
               <span>{b.pct}%</span>

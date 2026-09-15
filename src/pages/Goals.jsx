@@ -64,14 +64,14 @@ export default function Goals() {
           return (
             <motion.div key={g.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="card budget-card">
               <div className="budget-card-top">
-                <div className="goal-icon"><Target size={17} color="#16A34A" /></div>
+                <div className="goal-icon"><Target size={17} color="#34D399" /></div>
                 <div style={{ flex: 1 }}>
                   <div className="budget-card-title">{g.name}</div>
                   <div className="budget-card-sub">{currency(g.current, lang)} / {currency(g.target, lang)}</div>
                 </div>
                 <button className="icon-btn-ghost" onClick={() => deleteGoal(g.id)}><Trash2 size={14} /></button>
               </div>
-              <ProgressBar pct={pct} color="#16A34A" />
+              <ProgressBar pct={pct} color="#34D399" />
               <div className="budget-card-footer">
                 <span>{g.targetDate}</span>
                 <span>{pct}%</span>

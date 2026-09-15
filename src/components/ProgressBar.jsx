@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 
-export default function ProgressBar({ pct, color = "#16A34A", height = 8, bg = "#EEF0F4" }) {
+export default function ProgressBar({ pct, color = "#34D399", height = 8, bg = "rgba(255,255,255,0.08)" }) {
   const clamped = Math.max(0, Math.min(100, pct));
   return (
     <div style={{ background: bg, borderRadius: height, height }}>

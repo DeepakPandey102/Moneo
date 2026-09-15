@@ -160,9 +160,9 @@ export default function Transactions() {
   }
 
   const confidenceMeta = {
-    high: { label: lang === "ko" ? "높은 신뢰도" : "High confidence", color: "#2FAE66", bg: "#EAFBF1" },
-    review: { label: lang === "ko" ? "검토 권장" : "Review recommended", color: "#B57816", bg: "#FEF6E7" },
-    low: { label: lang === "ko" ? "낮은 신뢰도 — 확인 필요" : "Low confidence — please verify", color: "#E0563B", bg: "#FDECEA" },
+    high: { label: lang === "ko" ? "높은 신뢰도" : "High confidence", color: "#34D399", bg: "rgba(52,211,153,0.14)" },
+    review: { label: lang === "ko" ? "검토 권장" : "Review recommended", color: "#FBBF24", bg: "rgba(251,191,36,0.14)" },
+    low: { label: lang === "ko" ? "낮은 신뢰도 — 확인 필요" : "Low confidence — please verify", color: "#F87171", bg: "rgba(248,113,113,0.14)" },
   };
 
   return (
@@ -286,7 +286,7 @@ export default function Transactions() {
 
               {scanState === "analyzing" && (
                 <div className="scan-loading">
-                  <div className="scan-spinner"><Sparkles size={26} color="#16A34A" /></div>
+                  <div className="scan-spinner"><Sparkles size={26} color="#34D399" /></div>
                   <div className="scan-loading-title">{lang === "ko" ? "AI가 영수증을 분석하고 있어요" : "Moneo AI is analyzing your receipt"}</div>
                   <motion.div key={scanStep} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="scan-loading-step">
                     {(lang === "ko" ? ANALYZE_STEPS_KO : ANALYZE_STEPS_EN)[scanStep]}
@@ -296,9 +296,9 @@ export default function Transactions() {
 
               {scanState === "error" && (
                 <div className="scan-loading">
-                  <div className="scan-spinner" style={{ background: "#FDECEA" }}><AlertCircle size={26} color="#E0563B" /></div>
+                  <div className="scan-spinner" style={{ background: "rgba(248,113,113,0.14)" }}><AlertCircle size={26} color="#F87171" /></div>
                   <div className="scan-loading-title">{lang === "ko" ? "분석에 실패했어요" : "Analysis failed"}</div>
-                  <div className="scan-loading-step" style={{ color: "#E0563B" }}>{scanError}</div>
+                  <div className="scan-loading-step" style={{ color: "#F87171" }}>{scanError}</div>
                   <div style={{ display: "flex", gap: 8, marginTop: 18, justifyContent: "center" }}>
                     <button className="btn-secondary" onClick={closeScanFlow}>{t("cancel")}</button>
                     <button className="btn-primary" onClick={() => { closeScanFlow(); openAdd(); }}>

@@ -54,8 +54,8 @@ export default function Register() {
       <div className="auth-screen">
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="auth-card" style={{ textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#EAF7EE", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <MailCheck size={30} color="#16A34A" />
+            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(52,211,153,0.14)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <MailCheck size={30} color="#34D399" />
             </div>
           </div>
           <h1 className="auth-title" style={{ textAlign: "center" }}>
@@ -78,8 +78,8 @@ export default function Register() {
     <div className="auth-screen">
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="auth-card">
         <div className="auth-brand">
-          <Coins size={28} color="#16A34A" />
-          <span>Moneo 2.0</span>
+          <Coins size={28} color="#34D399" />
+          <span>Moneo</span>
         </div>
         <p className="auth-tagline">{t("tagline")}</p>
 

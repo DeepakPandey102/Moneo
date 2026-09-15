@@ -1,4 +1,4 @@
-# Moneo 2.0 (모니오) — AI-Powered Personal Finance Management
+# Moneo (모니오) — AI-Powered Personal Finance Management
 
 A capstone project: a real, working personal finance web app where you can
 manually track spending, or point your phone at a receipt and let Google's

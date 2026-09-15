@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const COLORS = ["#16A34A", "#2FAE66", "#E0A83B", "#9B6BF2", "#E0563B"];
+const COLORS = ["#34D399", "#10B981", "#FBBF24", "#A78BFA", "#F87171"];
 
 function Piece({ i }) {
   const angle = (i / 18) * Math.PI * 2;
@@ -48,9 +48,9 @@ export default function Celebration({ trigger, label }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8 }}
               style={{
-                position: "absolute", top: "42%", background: "var(--ink, #14171F)", color: "white",
-                padding: "10px 18px", borderRadius: 30, fontSize: 13, fontWeight: 700,
-                boxShadow: "0 8px 24px rgba(0,0,0,0.25)", whiteSpace: "nowrap",
+                position: "absolute", top: "42%", background: "var(--gradient-brand)", color: "#06120D",
+                padding: "10px 18px", borderRadius: 30, fontSize: 13, fontWeight: 800,
+                boxShadow: "0 8px 28px rgba(52,211,153,0.35)", whiteSpace: "nowrap",
               }}
             >
               {label}

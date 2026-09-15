@@ -23,17 +23,18 @@ export default class ErrorBoundary extends React.Component {
         <div style={{
           minHeight: "100vh", display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center", gap: 16, padding: 24,
-          fontFamily: "'Segoe UI', sans-serif", textAlign: "center",
+          fontFamily: "'Inter', 'Segoe UI', sans-serif", textAlign: "center",
+          background: "var(--bg)",
         }}>
           <div style={{ fontSize: 40 }}>⚠️</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: "#14171F" }}>Something went wrong</div>
-          <div style={{ fontSize: 14, color: "#6B7280", maxWidth: 380 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "var(--ink)" }}>Something went wrong</div>
+          <div style={{ fontSize: 14, color: "var(--muted)", maxWidth: 380 }}>
             Moneo hit an unexpected error. Reloading usually fixes it.
           </div>
           <button
             onClick={() => window.location.reload()}
             style={{
-              background: "#16A34A", color: "white", border: "none",
+              background: "var(--gradient-brand)", color: "#06120D", border: "none",
               padding: "10px 20px", borderRadius: 10, fontWeight: 700,
               fontSize: 14, cursor: "pointer",
             }}

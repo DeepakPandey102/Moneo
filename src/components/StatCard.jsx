@@ -23,14 +23,14 @@ function useCountUp(target) {
   return display;
 }
 
-export default function StatCard({ label, value, icon: Icon, color = "#16A34A", accentBar, sub, subColor }) {
+export default function StatCard({ label, value, icon: Icon, color = "#34D399", accentBar, sub, subColor }) {
   const animated = useCountUp(value);
   return (
     <motion.div
       initial={{ opacity: 0, y: 14, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      whileHover={{ y: -3, boxShadow: "0 8px 20px rgba(20,23,31,0.09)" }}
+      whileHover={{ y: -3, boxShadow: "0 12px 28px rgba(0,0,0,0.45)" }}
       className="stat-card"
       style={accentBar ? { borderLeft: `4px solid ${accentBar}` } : undefined}
     >

@@ -41,8 +41,8 @@ export default function Login() {
     <div className="auth-screen">
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="auth-card">
         <div className="auth-brand">
-          <Coins size={28} color="#16A34A" />
-          <span>Moneo 2.0</span>
+          <Coins size={28} color="#34D399" />
+          <span>Moneo</span>
         </div>
         <p className="auth-tagline">{t("tagline")}</p>
 

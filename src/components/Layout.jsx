@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   LayoutDashboard, Receipt, BarChart3, Wallet, Target,
-  StickyNote, MessageCircle, Settings, LogOut, Coins, Lightbulb,
+  StickyNote, MessageCircle, Settings, LogOut, Coins, Lightbulb, Sparkles,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import Toast from "./Toast";
@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { to: "/app/goals", key: "goals", icon: Target },
   { to: "/app/notes", key: "notes", icon: StickyNote },
   { to: "/app/assistant", key: "assistant", icon: MessageCircle },
+  { to: "/app/ask", key: "askAnything", icon: Sparkles },
   { to: "/app/settings", key: "settings", icon: Settings },
 ];
 
@@ -49,8 +50,8 @@ export default function Layout() {
       {/* Desktop sidebar */}
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <Coins size={22} color="#16A34A" />
-          <span>Moneo 2.0</span>
+          <Coins size={22} color="#34D399" />
+          <span>Moneo</span>
         </div>
         <nav className="sidebar-nav">
           {NAV_ITEMS.map((item) => (
@@ -110,16 +111,18 @@ export default function Layout() {
 
       {/* Mobile bottom nav */}
       <nav className="bottom-nav">
-        {[NAV_ITEMS[0], NAV_ITEMS[1], NAV_ITEMS[3], NAV_ITEMS[6], NAV_ITEMS[7]].map((item) => (
-          <NavLink
-            key={item.key}
-            to={item.to}
-            className={({ isActive }) => "bottom-nav-link" + (isActive ? " active" : "")}
-          >
-            <item.icon size={19} />
-            <span>{t(item.key)}</span>
-          </NavLink>
-        ))}
+        {["dashboard", "transactions", "assistant", "askAnything", "settings"]
+          .map((key) => NAV_ITEMS.find((item) => item.key === key))
+          .map((item) => (
+            <NavLink
+              key={item.key}
+              to={item.to}
+              className={({ isActive }) => "bottom-nav-link" + (isActive ? " active" : "")}
+            >
+              <item.icon size={19} />
+              <span>{t(item.key)}</span>
+            </NavLink>
+          ))}
       </nav>
 
       <Toast />
