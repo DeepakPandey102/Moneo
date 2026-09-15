@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import aiRoutes from "./routes/ai.js";
 import receiptRoutes from "./routes/receipt.js";
+import chatRoutes from "./routes/chat.js";
 import { isConfigured, currentModel } from "./services/geminiService.js";
 
 const app = express();
@@ -21,6 +22,7 @@ app.get("/api/ai/status", (req, res) => {
 
 app.use("/api/ai", aiRoutes);
 app.use("/api/receipt", receiptRoutes);
+app.use("/api/chat", chatRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: "not_found", message: `No route for ${req.method} ${req.path}` });
