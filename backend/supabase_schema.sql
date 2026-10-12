@@ -24,6 +24,11 @@ create table if not exists public.user_data (
 -- logged-in user could read or overwrite anyone else's data.
 alter table public.user_data enable row level security;
 
+-- (drop-if-exists lines make this whole file safe to re-run)
+drop policy if exists "Users can view their own data" on public.user_data;
+drop policy if exists "Users can insert their own data" on public.user_data;
+drop policy if exists "Users can update their own data" on public.user_data;
+
 -- A user can only ever see their own row...
 create policy "Users can view their own data"
   on public.user_data for select
@@ -37,7 +42,8 @@ create policy "Users can insert their own data"
 -- ...and can only ever update their own row.
 create policy "Users can update their own data"
   on public.user_data for update
-  using (auth.uid() = user_id);
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 -- Automatically create an empty data row the moment someone finishes
 -- signing up, so the app never has to handle "no row yet" as a special
@@ -46,11 +52,13 @@ create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.user_data (user_id)
-  values (new.id);
+  values (new.id)
+  on conflict (user_id) do nothing;
   return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = public;
 
+drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
@@ -64,6 +72,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists set_user_data_updated_at on public.user_data;
 create trigger set_user_data_updated_at
   before update on public.user_data
   for each row execute function public.set_updated_at();

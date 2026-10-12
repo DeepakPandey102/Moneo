@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Send, Sparkles } from "lucide-react";
 import { useApp } from "../context/AppContext";
@@ -16,17 +17,43 @@ export default function Assistant() {
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, typing]);
 
+  // A question typed into the top search bar arrives as ?q=...
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    const q = params.get("q");
+    if (!q) return;
+    setParams({}, { replace: true });
+    send(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
+
   async function send(text) {
     const q = (text ?? input).trim();
-    if (!q) return;
+    if (!q || typing) return; // no overlapping requests
     setMessages((prev) => [...prev, { from: "user", text: q }]);
     setInput("");
     setTyping(true);
-    const answer = await getAssistantResponse(q, data, lang, assistantMode);
+    let answer;
+    try {
+      answer = await getAssistantResponse(q, data, lang, assistantMode);
+    } catch (err) {
+      console.error(err);
+      answer = lang === "ko" ? "답변을 만들지 못했어요. 다시 시도해주세요." : "Something went wrong. Please try again.";
+    }
     setTimeout(() => {
       setMessages((prev) => [...prev, { from: "ai", text: answer }]);
       setTyping(false);
     }, 450);
+  }
+
+  // Korean (and Japanese/Chinese) keyboards fire Enter once to finish
+  // composing the last syllable and again for the real Enter — without the
+  // isComposing check the message was sent twice, the second time with just
+  // the leftover last character.
+  function handleKeyDown(e) {
+    if (e.key !== "Enter" || e.nativeEvent.isComposing || e.keyCode === 229) return;
+    e.preventDefault();
+    send();
   }
 
   const suggestions = lang === "ko" ? SUGGESTIONS_KO : SUGGESTIONS_EN;
@@ -35,7 +62,7 @@ export default function Assistant() {
     <div className="page">
       <div className="page-header">
         <h1>{t("assistant")}</h1>
-        <span className="mode-badge">{assistantMode === "demo" ? t("demoAssistant") : t("apiAssistant")}</span>
+        <span className="mode-badge">Moneo AI</span>
       </div>
 
       <div className="card chat-card">
@@ -58,7 +85,7 @@ export default function Assistant() {
         {messages.length <= 1 && (
           <div className="suggestion-row">
             {suggestions.map((s) => (
-              <button key={s} className="suggestion-chip" onClick={() => send(s)}>{s}</button>
+              <button key={s} className="suggestion-chip" onClick={() => send(s)} disabled={typing}>{s}</button>
             ))}
           </div>
         )}
@@ -67,10 +94,10 @@ export default function Assistant() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && send()}
+            onKeyDown={handleKeyDown}
             placeholder={t("assistantPlaceholder")}
           />
-          <button onClick={() => send()} className="btn-primary chat-send"><Send size={16} /></button>
+          <button onClick={() => send()} className="btn-primary chat-send" disabled={typing || !input.trim()}><Send size={16} /></button>
         </div>
       </div>
     </div>

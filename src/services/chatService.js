@@ -26,7 +26,7 @@ export async function listThreads(userId) {
     .eq("user_id", userId)
     .order("updated_at", { ascending: false });
   if (error) throw error;
-  return data;
+  return Array.isArray(data) ? data : [];
 }
 
 export async function createThread(userId) {
@@ -49,14 +49,25 @@ export async function deleteThread(threadId) {
   if (error) throw error;
 }
 
+// Returns { summary, summarizedCount }. summarizedCount = how many of the
+// thread's oldest messages are already folded into the summary. Uses
+// select("*") so it still works if the summarized_count column hasn't been
+// added yet (see backend/supabase_migration_001.sql) — it just reads as 0.
 async function getThreadMemory(threadId) {
-  const { data, error } = await supabase.from("chat_threads").select("memory_summary").eq("id", threadId).single();
+  const { data, error } = await supabase.from("chat_threads").select("*").eq("id", threadId).single();
   if (error) throw error;
-  return data?.memory_summary || "";
+  return {
+    summary: data?.memory_summary || "",
+    summarizedCount: Number(data?.summarized_count) || 0,
+    hasCountColumn: data ? "summarized_count" in data : false,
+  };
 }
 
-async function saveThreadMemory(threadId, summary) {
-  const { error } = await supabase.from("chat_threads").update({ memory_summary: summary }).eq("id", threadId);
+async function saveThreadMemory(threadId, summary, summarizedCount, hasCountColumn) {
+  const patch = hasCountColumn
+    ? { memory_summary: summary, summarized_count: summarizedCount }
+    : { memory_summary: summary };
+  const { error } = await supabase.from("chat_threads").update(patch).eq("id", threadId);
   if (error) throw error;
 }
 
@@ -69,7 +80,7 @@ export async function listMessages(threadId) {
     .eq("thread_id", threadId)
     .order("created_at", { ascending: true });
   if (error) throw error;
-  return data;
+  return Array.isArray(data) ? data : [];
 }
 
 async function saveMessage(threadId, role, content) {
@@ -113,10 +124,13 @@ async function postToBackend(path, body) {
 
 export function friendlyChatError(err, lang) {
   if (err.code === "BACKEND_UNREACHABLE") {
-    return lang === "ko" ? "백엔드 서버에 연결할 수 없어요." : "Can't reach the backend server.";
+    return lang === "ko" ? "Moneo AI에 연결할 수 없어요. 인터넷 연결을 확인해주세요." : "Couldn't reach Moneo AI. Check your connection.";
   }
   if (err.code === "gemini_not_configured") {
-    return lang === "ko" ? "AI가 아직 설정되지 않았어요." : "AI isn't set up yet.";
+    return lang === "ko" ? "AI를 잠시 사용할 수 없어요." : "AI is temporarily unavailable.";
+  }
+  if (err.code === "rate_limited") {
+    return lang === "ko" ? "요청이 너무 많아요. 1분 후 다시 시도해주세요." : "Too many requests — please try again in a minute.";
   }
   return lang === "ko" ? "메시지를 보내지 못했어요. 다시 시도해주세요." : "Couldn't send that message. Please try again.";
 }
@@ -130,12 +144,20 @@ export async function sendMessage({ threadId, message, lang, skipUserSave = fals
   }
 
   const allMessages = await listMessages(threadId);
-  const memorySummary = await getThreadMemory(threadId);
-  const recent = allMessages.slice(-RECENT_WINDOW).map((m) => ({ role: m.role, content: m.content }));
+  const { summary: memorySummary } = await getThreadMemory(threadId);
+
+  // The user message being answered is always the LAST message in the thread
+  // (just saved, or — on regenerate/retry — already saved earlier). It's sent
+  // separately as `message`, so drop it from the history in BOTH cases.
+  // (Previously the regenerate path kept it, so the AI saw the question twice.)
+  const history = allMessages.slice();
+  const last = history[history.length - 1];
+  if (last && last.role === "user" && last.content === message) history.pop();
+  const recent = history.slice(-RECENT_WINDOW).map((m) => ({ role: m.role, content: m.content }));
 
   const { reply } = await postToBackend("/api/chat/reply", {
     message,
-    recentMessages: skipUserSave ? recent : recent.slice(0, -1), // exclude the message we just sent — it's passed separately
+    recentMessages: recent,
     memorySummary,
     language: lang,
   });
@@ -149,20 +171,38 @@ export async function sendMessage({ threadId, message, lang, skipUserSave = fals
   return saved;
 }
 
+// Folds messages that have scrolled out of the recent window into the
+// running summary — but only the ones NOT already summarized. The old version
+// re-sent every older message on every reply once a thread passed 16
+// messages, so each reply got slower and costlier and the summary kept
+// re-absorbing the same messages.
+const summarizingThreads = new Set();
+
 async function maybeSummarize(threadId, lang) {
-  const allMessages = await listMessages(threadId);
-  if (allMessages.length < SUMMARIZE_EVERY) return;
+  if (summarizingThreads.has(threadId)) return; // one at a time per thread
+  summarizingThreads.add(threadId);
+  try {
+    const allMessages = await listMessages(threadId);
+    if (allMessages.length < SUMMARIZE_EVERY) return;
 
-  const older = allMessages.slice(0, -RECENT_WINDOW);
-  if (older.length === 0) return;
+    const { summary: previousSummary, summarizedCount, hasCountColumn } = await getThreadMemory(threadId);
+    const olderEnd = allMessages.length - RECENT_WINDOW;
+    // Without the tracking column we can't tell what's already summarized,
+    // so only summarize in batches (every SUMMARIZE_EVERY - RECENT_WINDOW messages).
+    const start = hasCountColumn ? Math.min(summarizedCount, olderEnd) : Math.max(0, olderEnd - (SUMMARIZE_EVERY - RECENT_WINDOW));
+    if (!hasCountColumn && (olderEnd % (SUMMARIZE_EVERY - RECENT_WINDOW)) !== 0) return;
+    const toFold = allMessages.slice(start, olderEnd);
+    if (toFold.length === 0) return;
 
-  const previousSummary = await getThreadMemory(threadId);
-  const { summary } = await postToBackend("/api/chat/summarize", {
-    messagesToSummarize: older.map((m) => ({ role: m.role, content: m.content })),
-    previousSummary,
-    language: lang,
-  });
-  await saveThreadMemory(threadId, summary);
+    const { summary } = await postToBackend("/api/chat/summarize", {
+      messagesToSummarize: toFold.map((m) => ({ role: m.role, content: m.content })),
+      previousSummary,
+      language: lang,
+    });
+    await saveThreadMemory(threadId, summary, olderEnd, hasCountColumn);
+  } finally {
+    summarizingThreads.delete(threadId);
+  }
 }
 
 export async function generateTitleForThread({ threadId, firstMessage, lang }) {

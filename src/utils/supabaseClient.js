@@ -19,4 +19,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// flowType "pkce": after Google sign-in or a password-reset email, Supabase
+// sends the user back with "?code=..." in the normal query string. The
+// default ("implicit") flow puts tokens after "#", which our HashRouter
+// would treat as a page path and throw away — the user would never end up
+// logged in.
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    flowType: "pkce",
+    detectSessionInUrl: true,
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+});

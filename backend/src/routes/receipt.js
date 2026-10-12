@@ -31,7 +31,8 @@ router.post("/analyze", (req, res) => {
 
     try {
       const imageBase64 = req.file.buffer.toString("base64");
-      const result = await analyzeReceipt({ imageBase64, mimeType: req.file.mimetype });
+      const language = req.body?.language === "ko" ? "ko" : "en";
+      const result = await analyzeReceipt({ imageBase64, mimeType: req.file.mimetype, language });
       res.json({ ...result, confidence_label: confidenceLabel(result.confidence) });
     } catch (err) {
       console.error("[receipt/analyze] error:", err.message);

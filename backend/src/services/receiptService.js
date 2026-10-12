@@ -20,12 +20,15 @@ You MUST choose "category" from EXACTLY this list, with no exceptions and no inv
 Respond with ONLY a raw JSON object (no markdown fences, no explanation, no extra text) in exactly this shape:
 {
   "merchant": string,
+  "merchant_original": string,
   "date": "YYYY-MM-DD",
   "total": number,
   "currency": "KRW",
   "category": one of [${ALLOWED_CATEGORIES.join(", ")}],
   "payment_method": string,
-  "items": [ { "name": string, "quantity": number, "price": number } ],
+  "receipt_time": "HH:MM" or "",
+  "approval_number": string,
+  "items": [ { "name": string, "name_original": string, "quantity": number, "price": number } ],
   "confidence": number
 }
 
@@ -34,31 +37,64 @@ Rules:
 - If the date is not visible on the receipt, use today's date and lower your confidence accordingly.
 - If individual items are not legible or not present, return an empty items array rather than guessing item names.
 - "total" must reflect the final amount actually paid, not a subtotal.
-- Never fabricate a merchant name — if genuinely unreadable, use "Unknown Merchant" and lower confidence.`;
+- "receipt_time" is the purchase time printed on the receipt, in 24-hour "HH:MM" (e.g. "19:48"). Use "" if no time is printed.
+- "approval_number" is the card approval number if printed (승인번호 / Approval No.), digits only. Use "" if there is none (e.g. cash receipts).
+- Never fabricate a merchant name — if genuinely unreadable, use "Unknown Merchant" and lower confidence.
+- Language: the user message says which language the app is in. Write "merchant" and each item "name" in THAT language (translate Korean to natural English, or English to Korean). Keep brand names as brands (GS25, CU, Starbucks, Olive Young) and translate the rest, e.g. "GS25 수원영통점" → "GS25 Suwon Yeongtong Branch", "삼각김밥 참치마요" → "Tuna Mayo Triangle Kimbap". Put the exact text as printed on the receipt in "merchant_original" and "name_original". If the printed text is already in the app's language, the original is the same text.`;
 
+// "Today" in the app's timezone, not UTC. toISOString() is UTC, so receipts
+// scanned in Korea before 9am were dated yesterday when the date was missing.
+const APP_TIMEZONE = process.env.APP_TIMEZONE || "Asia/Seoul";
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  // en-CA formats as YYYY-MM-DD
+  return new Intl.DateTimeFormat("en-CA", { timeZone: APP_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 }
 
 function parseJsonLoose(raw) {
   const cleaned = raw.replace(/```json|```/g, "").trim();
-  return JSON.parse(cleaned);
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    // Model sometimes wraps the JSON in a sentence — grab the outermost {...}
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start !== -1 && end > start) return JSON.parse(cleaned.slice(start, end + 1));
+    throw new Error("not json");
+  }
+}
+
+// "7:48 PM", "19:48:27", "19시 48분" → "19:48". Anything unreadable → "".
+export function normalizeTime(value) {
+  const m = String(value || "").match(/(\d{1,2})\s*[:시]\s*(\d{2})/);
+  if (!m) return "";
+  let h = Number(m[1]);
+  const min = Number(m[2]);
+  if (/pm|오후/i.test(value) && h < 12) h += 12;
+  if (/am|오전/i.test(value) && h === 12) h = 0;
+  if (h > 23 || min > 59) return "";
+  return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
 }
 
 export function normalizeAmount(value) {
-  if (typeof value === "number") return Math.round(value);
+  if (typeof value === "number") return Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
   if (typeof value !== "string") return 0;
-  const digitsOnly = value.replace(/[^\d]/g, "");
+  // Drop a decimal part first ("17,450.00" must be 17450, not 1745000).
+  const withoutDecimals = value.replace(/[.,]\d{1,2}(?!\d)\s*$/, "");
+  const digitsOnly = withoutDecimals.replace(/[^\d]/g, "");
   return digitsOnly ? parseInt(digitsOnly, 10) : 0;
 }
 
-export async function analyzeReceipt({ imageBase64, mimeType }) {
+export async function analyzeReceipt({ imageBase64, mimeType, language = "en" }) {
+  const appLanguage = language === "ko" ? "Korean (한국어)" : "English";
   const raw = await generateFromImage({
     systemInstruction: SYSTEM_INSTRUCTION,
     imageBase64,
     mimeType,
-    prompt: "Analyze this receipt and return the JSON as instructed.",
-    maxOutputTokens: 700,
+    prompt: `Analyze this receipt and return the JSON as instructed. The app language is ${appLanguage}. Today's date is ${todayISO()}.`,
+    // Room for translated + original names on long receipts (a cut-off JSON
+    // reply can't be parsed and the whole scan would fail).
+    maxOutputTokens: 1500,
+    json: true,
   });
 
   let parsed;
@@ -74,21 +110,30 @@ export async function analyzeReceipt({ imageBase64, mimeType }) {
   const category = ALLOWED_CATEGORIES.includes(parsed.category) ? parsed.category : "other";
   const items = Array.isArray(parsed.items)
     ? parsed.items.map((it) => ({
-        name: String(it.name || "").slice(0, 80),
+        name: String(it.name || it.name_original || "").slice(0, 80),
+        name_original: String(it.name_original || "").slice(0, 80),
         quantity: Number(it.quantity) > 0 ? Number(it.quantity) : 1,
         price: normalizeAmount(it.price),
       }))
     : [];
 
-  const confidence = Math.max(0, Math.min(100, Math.round(Number(parsed.confidence) || 0)));
+  // Gemini is asked for 0-100, but sometimes answers on a 0-1 scale (0.96).
+  // Without this, 0.96 rounded to 1% and a clear receipt showed "low confidence".
+  let rawConfidence = Number(parsed.confidence) || 0;
+  if (rawConfidence > 0 && rawConfidence <= 1) rawConfidence *= 100;
+  const confidence = Math.max(0, Math.min(100, Math.round(rawConfidence)));
 
   return {
-    merchant: String(parsed.merchant || "Unknown Merchant").slice(0, 120),
+    merchant: String(parsed.merchant || parsed.merchant_original || "Unknown Merchant").slice(0, 120),
+    merchant_original: String(parsed.merchant_original || "").slice(0, 120),
     date: /^\d{4}-\d{2}-\d{2}$/.test(parsed.date) ? parsed.date : todayISO(),
     total: normalizeAmount(parsed.total),
     currency: "KRW",
     category,
     payment_method: String(parsed.payment_method || "").slice(0, 40) || "Unknown",
+    // Used by the app to spot a receipt that was already saved.
+    receipt_time: normalizeTime(parsed.receipt_time),
+    approval_number: String(parsed.approval_number || "").replace(/\D/g, "").slice(0, 20),
     items,
     confidence,
   };

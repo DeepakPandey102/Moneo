@@ -20,6 +20,7 @@ import {
 import { t } from "../data/translations";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+import { compressImage } from "../utils/imageCompress";
 
 function pct(a, b) {
   if (!b) return 0;
@@ -27,6 +28,29 @@ function pct(a, b) {
 }
 
 // ---------- Demo Mode (local, offline, no backend required) ----------
+
+// Pulls a price out of a question. Understands "500,000", "₩500000",
+// "50만원", "50만", "1.5만", "3천원", "2억". Before, "50만원" was read as ₩50.
+export function parsePrice(query) {
+  const text = String(query).replace(/\s+/g, "");
+  const small = { "천": 1000, "백": 100 };
+  const big = { "만": 10000, "억": 100000000 };
+  const re = /(\d[\d,]*(?:\.\d+)?)(천|백)?(만|억)?/g;
+  let total = 0;
+  let sawKoreanUnit = false;
+  let firstPlain = null;
+  for (const m of text.matchAll(re)) {
+    const n = Number(m[1].replace(/,/g, ""));
+    if (!m[2] && !m[3]) {
+      if (firstPlain === null) firstPlain = n;
+      continue;
+    }
+    sawKoreanUnit = true;
+    total += n * (m[2] ? small[m[2]] : 1) * (m[3] ? big[m[3]] : 1);
+  }
+  const price = sawKoreanUnit ? Math.round(total) : firstPlain;
+  return price > 0 ? price : null;
+}
 
 function localAnswer(query, data, lang) {
   const q = query.toLowerCase();
@@ -45,6 +69,23 @@ function localAnswer(query, data, lang) {
     travel: ["travel", "여행"],
   };
 
+  // Affordability is checked FIRST: "can I afford ₩300,000 this month?"
+  // used to be caught by the "this month" rule, and "can I afford a food
+  // processor?" by the food rule, so the user never got an afford answer.
+  if (q.includes("afford") || q.includes("감당") || q.includes("살 수") || q.includes("사도") || q.includes("살까") || q.includes("buy")) {
+    const s = savings(transactions);
+    const price = parsePrice(query);
+    if (price) {
+      const canAfford = price <= s;
+      return lang === "ko"
+        ? `이번 달 저축액은 ${currency(s, lang)}이에요. ${currency(price, lang)}은 ${canAfford ? "저축액 안에서 감당할 수 있어요" : "현재 저축액을 초과해요 — 목표나 예산에 영향이 있을 수 있어요"}.`
+        : `Your savings this month are ${currency(s, lang)}. ${currency(price, lang)} is ${canAfford ? "within that" : "more than that — it could eat into your goals or budget"}.`;
+    }
+    return lang === "ko"
+      ? `이번 달 저축액은 ${currency(s, lang)}이에요. 정확한 가격을 알려주시면 감당 가능한지 계산해드릴게요.`
+      : `Your savings this month are ${currency(s, lang)}. Tell me the price and I can do the math.`;
+  }
+
   for (const [catId, keywords] of Object.entries(categoryKeywords)) {
     if (catMatch(catId, keywords)) {
       const spend = spendingByCategory(transactions);
@@ -52,7 +93,7 @@ function localAnswer(query, data, lang) {
       const label = categoryLabel(catId, lang);
       const budget = budgets.find((b) => b.category === catId);
       let extra = "";
-      if (budget) {
+      if (budget && Number(budget.limit) > 0) {
         const usedPct = Math.round((amount / budget.limit) * 100);
         extra = lang === "ko"
           ? ` 예산 ${currency(budget.limit, lang)}의 ${usedPct}%를 사용했어요.`
@@ -121,25 +162,10 @@ function localAnswer(query, data, lang) {
   if (q.includes("goal") || q.includes("목표")) {
     if (!goals.length) return lang === "ko" ? "아직 설정된 목표가 없어요." : "You haven't set any savings goals yet.";
     const g = goals[0];
-    const remaining = g.target - g.current;
+    const remaining = Math.max(0, Number(g.target) - Number(g.current));
     return lang === "ko"
-      ? `${g.name} 목표까지 ${currency(remaining, lang)} 남았어요 (${Math.round((g.current / g.target) * 100)}% 달성).`
-      : `You need ${currency(remaining, lang)} more to reach your ${g.name} goal (${Math.round((g.current / g.target) * 100)}% there).`;
-  }
-
-  if (q.includes("afford") || q.includes("감당") || q.includes("살 수") || q.includes("사도")) {
-    const s = savings(transactions);
-    const priceMatch = query.match(/[\d,]+/);
-    const price = priceMatch ? Number(priceMatch[0].replace(/,/g, "")) : null;
-    if (price) {
-      const canAfford = price <= s;
-      return lang === "ko"
-        ? `이번 달 저축액은 ${currency(s, lang)}이에요. ${currency(price, lang)}은 ${canAfford ? "저축액 안에서 감당할 수 있어요" : "현재 저축액을 초과해요 — 목표나 예산에 영향이 있을 수 있어요"}. (참고: Demo Mode는 간단한 계산만 해요 — 더 자세한 분석은 API Mode를 사용해보세요.)`
-        : `Your savings this month are ${currency(s, lang)}. ${currency(price, lang)} is ${canAfford ? "within that" : "more than that — it could eat into your goals or budget"}. (Note: Demo Mode does simple math only — switch to API Mode for deeper reasoning.)`;
-    }
-    return lang === "ko"
-      ? `이번 달 저축액은 ${currency(s, lang)}이에요. 정확한 가격을 알려주시면 감당 가능한지 계산해드릴게요. 더 깊은 분석은 API Mode에서 가능해요.`
-      : `Your savings this month are ${currency(s, lang)}. Tell me the price and I can do the math — for deeper reasoning about goals and budgets, try API Mode.`;
+      ? `${g.name} 목표까지 ${currency(remaining, lang)} 남았어요 (${Number(g.target) > 0 ? Math.round((Number(g.current) / Number(g.target)) * 100) : 0}% 달성).`
+      : `You need ${currency(remaining, lang)} more to reach your ${g.name} goal (${Number(g.target) > 0 ? Math.round((Number(g.current) / Number(g.target)) * 100) : 0}% there).`;
   }
 
   if (q.includes("reduce") || q.includes("줄이") || q.includes("how can")) {
@@ -258,13 +284,14 @@ async function postToBackend(path, body) {
 function friendlyApiError(err, lang) {
   if (err.code === "BACKEND_UNREACHABLE") {
     return lang === "ko"
-      ? "백엔드 서버에 연결할 수 없어요. backend 폴더에서 서버가 실행 중인지 확인해주세요."
-      : "Can't reach the backend server. Make sure it's running (see backend/README).";
+      ? "Moneo AI에 연결할 수 없어요. 인터넷 연결을 확인하고 잠시 후 다시 시도해주세요."
+      : "Couldn't reach Moneo AI. Check your connection and try again in a moment.";
+  }
+  if (err.code === "rate_limited") {
+    return lang === "ko" ? "요청이 너무 많아요. 1분 후 다시 시도해주세요." : "Too many requests — please try again in a minute.";
   }
   if (err.code === "gemini_not_configured") {
-    return lang === "ko"
-      ? "AI 기능이 아직 설정되지 않았어요. backend/.env에 GEMINI_API_KEY를 추가하고 서버를 재시작해주세요."
-      : "AI features aren't set up yet. Add GEMINI_API_KEY in backend/.env and restart the backend.";
+    return lang === "ko" ? "AI 기능을 잠시 사용할 수 없어요. 나중에 다시 시도해주세요." : "AI features are temporarily unavailable. Please try again later.";
   }
   return lang === "ko"
     ? "AI 요청이 실패했어요. 잠시 후 다시 시도해주세요."
@@ -278,6 +305,9 @@ async function apiAnswer(query, data, lang) {
     return answer;
   } catch (err) {
     console.error("Moneo Assistant error:", err);
+    // Server asleep/unreachable: answer from the user's own numbers instead
+    // of showing an error.
+    if (err?.code === "BACKEND_UNREACHABLE" || err?.message === "BACKEND_UNREACHABLE") return localAnswer(query, data, lang);
     return friendlyApiError(err, lang);
   }
 }
@@ -300,9 +330,11 @@ async function apiInsight(data, lang) {
 // file must be a browser File/Blob object (from an <input type="file">).
 // Returns the backend's structured result, including confidence data,
 // or throws with a friendly-mappable error code.
-export async function extractReceiptData(file) {
+export async function extractReceiptData(file, lang = "en") {
+  const upload = await compressImage(file);
   const formData = new FormData();
-  formData.append("receipt", file);
+  formData.append("receipt", upload);
+  formData.append("language", lang === "ko" ? "ko" : "en");
 
   let res;
   try {
@@ -319,19 +351,30 @@ export async function extractReceiptData(file) {
     err.code = json.error || "UNKNOWN";
     throw err;
   }
-  return json; // { merchant, date, total, currency, category, payment_method, items, confidence, confidence_label }
+  return json; // { merchant, merchant_original, date, total, currency, category, payment_method, items, confidence, confidence_label }
+}
+
+// Free hosting (Render) puts the server to sleep when idle, and the first
+// request then waits 30–60 s for it to boot. Pinging /api/health as soon as
+// the app opens means it's usually awake by the time someone scans a receipt.
+let warmedUp = false;
+export function warmUpBackend() {
+  if (warmedUp) return;
+  warmedUp = true;
+  fetch(`${BACKEND_URL}/api/health`, { method: "GET", cache: "no-store" }).catch(() => { warmedUp = false; });
 }
 
 export function friendlyReceiptError(err, lang) {
   if (err.code === "BACKEND_UNREACHABLE") {
     return lang === "ko"
-      ? "백엔드 서버에 연결할 수 없어요. 서버가 실행 중인지 확인해주세요."
-      : "Can't reach the backend server. Make sure it's running.";
+      ? "Moneo AI에 연결할 수 없어요. 인터넷 연결을 확인하고 다시 시도해주세요."
+      : "Couldn't reach Moneo AI. Check your connection and try again.";
+  }
+  if (err.code === "rate_limited") {
+    return lang === "ko" ? "요청이 너무 많아요. 1분 후 다시 시도해주세요." : "Too many requests — please try again in a minute.";
   }
   if (err.code === "gemini_not_configured") {
-    return lang === "ko"
-      ? "AI 영수증 인식이 아직 설정되지 않았어요. backend/.env에 GEMINI_API_KEY를 추가해주세요."
-      : "AI receipt scanning isn't set up yet. Add GEMINI_API_KEY in backend/.env.";
+    return lang === "ko" ? "영수증 인식을 잠시 사용할 수 없어요. 직접 입력해주세요." : "Receipt scanning is temporarily unavailable. Please enter it manually.";
   }
   if (err.code === "unreadable_receipt") {
     return lang === "ko"
@@ -361,12 +404,12 @@ export async function getBackendStatus() {
 
 // ---------- Public entry points ----------
 
-export async function getAssistantResponse(query, data, lang, mode) {
-  if (mode === "api") return apiAnswer(query, data, lang);
-  return localAnswer(query, data, lang);
+// The AI server is always used now; local calculations are only a fallback
+// when it can't be reached. (The old "Demo Mode" setting is ignored.)
+export async function getAssistantResponse(query, data, lang) {
+  return apiAnswer(query, data, lang);
 }
 
-export async function getProactiveInsight(data, lang, mode) {
-  if (mode === "api") return apiInsight(data, lang);
-  return localInsight(data, lang);
+export async function getProactiveInsight(data, lang) {
+  return apiInsight(data, lang);
 }

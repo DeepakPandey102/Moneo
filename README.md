@@ -1,5 +1,11 @@
 # Moneo (모니오) — AI-Powered Personal Finance Management
 
+> **Deploying?** See **[DEPLOY.md](DEPLOY.md)** — GitHub → Render (backend) → Vercel (frontend) in about 30 minutes.
+> Google login setup: **[GOOGLE_LOGIN_SETUP.md](GOOGLE_LOGIN_SETUP.md)** · What changed: **[CHANGES.md](CHANGES.md)**
+>
+> **Team:** Deepak Pandey (project lead, full-stack & AI) · Renuka Thapa Magar (UI/UX design) · Rohit Rawal (frontend & QA)
+
+
 A capstone project: a real, working personal finance web app where you can
 manually track spending, or point your phone at a receipt and let Google's
 Gemini API read it for you.
@@ -115,13 +121,22 @@ storing your financial data in the cloud instead of just one browser.
    `user_data` table, locks it down so users can only ever see their own
    data (Row Level Security), and sets up a trigger that gives every new
    signup an empty data row automatically.
-4. Go to **Authentication → URL Configuration** and set **Site URL** to
+4. In the same SQL Editor, also run `backend/supabase_chat_schema.sql`
+   (Ask Anything chat tables) and then `backend/supabase_migration_001.sql`
+   (chat memory tracking, tighter update policies, and a backfill that
+   creates a data row for any account made before the signup trigger).
+   All three files are safe to re-run.
+5. Go to **Authentication → URL Configuration** and set **Site URL** to
    `http://localhost:5173` for now (update this later if you deploy).
 
 **Both values from step 2 go in the frontend's `.env`** (Section 6 below)
 — not the backend's. Supabase's anon key is designed to be used directly
 in browser code; it's safe because the Row Level Security rules (not the
 key itself) are what actually protect people's data.
+
+### Google login and password reset
+
+See **GOOGLE_LOGIN_SETUP.md** for the step-by-step Google Cloud + Supabase setup.
 
 ## 6. Set up and run the backend
 

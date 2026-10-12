@@ -96,7 +96,7 @@ export async function generateText({ systemInstruction, prompt, maxOutputTokens 
  * Image-in, text-out call for receipt analysis.
  * imageBase64 must NOT include the "data:image/...;base64," prefix.
  */
-export async function generateFromImage({ systemInstruction, imageBase64, mimeType, prompt, maxOutputTokens = 800 }) {
+export async function generateFromImage({ systemInstruction, imageBase64, mimeType, prompt, maxOutputTokens = 800, json = false }) {
   const genai = getClient();
   if (!genai) {
     const err = new Error("GEMINI_NOT_CONFIGURED");
@@ -119,6 +119,9 @@ export async function generateFromImage({ systemInstruction, imageBase64, mimeTy
       // Same fix as generateText() — see comment there. Receipt JSON
       // extraction doesn't need extended reasoning either.
       thinkingConfig: { thinkingBudget: 0 },
+      // Ask Gemini for strict JSON output so parsing doesn't depend on the
+      // model remembering "no markdown fences".
+      ...(json ? { responseMimeType: "application/json" } : {}),
     },
   });
 

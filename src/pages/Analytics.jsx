@@ -12,6 +12,14 @@ import { categoryLabel } from "../data/categories";
 
 const COLORS = ["#34D399", "#10B981", "#FBBF24", "#A78BFA", "#F87171", "#2BB4C9", "#EC6FA8", "#6B8CFF", "#8890A3"];
 
+// ₩2,600,000 → ₩2.6M so axis labels stay short on phones
+function shortWon(v) {
+  const n = Math.abs(v);
+  if (n >= 1000000) return `₩${(v / 1000000).toFixed(n >= 10000000 ? 0 : 1)}M`;
+  if (n >= 1000) return `₩${Math.round(v / 1000)}K`;
+  return `₩${v}`;
+}
+
 export default function Analytics() {
   const { data, lang, t } = useApp();
   const { transactions } = data;
@@ -47,7 +55,7 @@ export default function Analytics() {
                     {catData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
                   <Tooltip formatter={(v) => currency(v, lang)} />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: 12.5, paddingTop: 6 }} iconSize={10} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -60,10 +68,10 @@ export default function Analytics() {
             <ResponsiveContainer>
               <BarChart data={incomeExpenseData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#8A93B5" }} />
+                <YAxis tick={{ fontSize: 11, fill: "#8A93B5" }} width={52} tickFormatter={shortWon} />
                 <Tooltip formatter={(v) => currency(v, lang)} />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: 12.5, paddingTop: 6 }} iconSize={10} />
                 <Bar dataKey="income" fill="#10B981" radius={[6, 6, 0, 0]} name={t("income")} />
                 <Bar dataKey="expenses" fill="#F87171" radius={[6, 6, 0, 0]} name={t("expenses")} />
               </BarChart>
@@ -80,8 +88,8 @@ export default function Analytics() {
               <ResponsiveContainer>
                 <LineChart data={daily}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                  <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} width={70} />
+                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#8A93B5" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "#8A93B5" }} width={52} tickFormatter={shortWon} />
                   <Tooltip formatter={(v) => currency(v, lang)} />
                   <Line type="monotone" dataKey="cumulative" stroke="#34D399" strokeWidth={2.5} dot={false} />
                 </LineChart>
@@ -96,8 +104,8 @@ export default function Analytics() {
             <ResponsiveContainer>
               <BarChart data={comparisonData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} width={70} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#8A93B5" }} />
+                <YAxis tick={{ fontSize: 11, fill: "#8A93B5" }} width={52} tickFormatter={shortWon} />
                 <Tooltip formatter={(v) => currency(v, lang)} />
                 <Bar dataKey="amount" fill="#A78BFA" radius={[6, 6, 0, 0]} />
               </BarChart>

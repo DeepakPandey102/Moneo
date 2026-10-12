@@ -10,7 +10,7 @@ function StatusDot({ up }) {
 }
 
 export default function Settings() {
-  const { user, data, lang, setLanguage, assistantMode, setAssistantMode, generateSample, clearData, showToast, logout, t } = useApp();
+  const { user, data, lang, setLanguage, assistantMode, setAssistantMode, clearData, showToast, logout, t } = useApp();
   const [confirmAction, setConfirmAction] = useState(null); // null | "sample" | "clear" | "logout"
   const [status, setStatus] = useState({ backendUp: null, geminiConfigured: null });
   const [checking, setChecking] = useState(false);
@@ -24,13 +24,16 @@ export default function Settings() {
 
   useEffect(() => { checkStatus(); }, [checkStatus]);
 
-  function handleConfirm() {
-    if (confirmAction === "sample") {
-      generateSample();
-      showToast(lang === "ko" ? "샘플 데이터가 생성됐어요." : "Sample month generated.");
-    } else if (confirmAction === "clear") {
-      clearData();
-      showToast(lang === "ko" ? "모든 데이터가 삭제됐어요." : "All data cleared.");
+  const [working, setWorking] = useState(false);
+
+  // Waits for the save to actually finish before saying it worked (before,
+  // "Sample month generated" showed instantly, even if it then failed).
+  async function handleConfirm() {
+    if (confirmAction === "clear") {
+      setWorking(true);
+      const ok = await clearData();
+      setWorking(false);
+      if (ok) showToast(lang === "ko" ? "모든 데이터가 삭제됐어요." : "All data cleared.");
     } else if (confirmAction === "logout") {
       logout();
       return; // component is about to unmount — nothing left to reset
@@ -77,49 +80,30 @@ export default function Settings() {
 
       <div className="card">
         <div className="card-title-row">
-          <span className="card-title"><Bot size={15} style={{ marginRight: 6, verticalAlign: -2 }} />{t("assistantMode")}</span>
-          <button className="icon-btn-ghost" onClick={checkStatus} title="Refresh status"><RefreshCw size={14} className={checking ? "spin" : ""} /></button>
+          <span className="card-title"><Bot size={15} style={{ marginRight: 6, verticalAlign: -2 }} />{lang === "ko" ? "AI 서비스" : "AI service"}</span>
+          <button className="icon-btn-ghost" onClick={checkStatus} title={lang === "ko" ? "상태 새로고침" : "Refresh status"} aria-label={lang === "ko" ? "상태 새로고침" : "Refresh status"}><RefreshCw size={14} className={checking ? "spin" : ""} /></button>
         </div>
-        <div className="radio-row">
-          <label>
-            <input type="radio" checked={assistantMode === "demo"} onChange={() => setAssistantMode("demo")} />
-            {t("demoMode")}
-          </label>
-          <label>
-            <input type="radio" checked={assistantMode === "api"} onChange={() => setAssistantMode("api")} />
-            {t("apiMode")}
-          </label>
-        </div>
-
         <div className="status-grid">
           <div className="status-row">
-            <span><Server size={14} style={{ marginRight: 6, verticalAlign: -2 }} />{lang === "ko" ? "백엔드" : "Backend"}</span>
+            <span><Server size={14} style={{ marginRight: 6, verticalAlign: -2 }} />{lang === "ko" ? "서버" : "Server"}</span>
             <span className="status-value">
               <StatusDot up={status.backendUp} />
-              {status.backendUp === null ? (lang === "ko" ? "확인 중..." : "Checking...") : status.backendUp ? (lang === "ko" ? "연결됨" : "Connected") : (lang === "ko" ? "오프라인" : "Offline")}
+              {status.backendUp === null ? (lang === "ko" ? "확인 중..." : "Checking...") : status.backendUp ? (lang === "ko" ? "연결됨" : "Connected") : (lang === "ko" ? "연결 안 됨" : "Unavailable")}
             </span>
           </div>
           <div className="status-row">
-            <span><Bot size={14} style={{ marginRight: 6, verticalAlign: -2 }} />Moneo AI (Gemini)</span>
+            <span><Bot size={14} style={{ marginRight: 6, verticalAlign: -2 }} />Moneo AI</span>
             <span className="status-value">
               <StatusDot up={status.geminiConfigured} />
-              {status.geminiConfigured === null ? (lang === "ko" ? "확인 중..." : "Checking...") : status.geminiConfigured ? (lang === "ko" ? "사용 가능" : "Available") : (lang === "ko" ? "설정 필요" : "Not configured")}
+              {status.geminiConfigured === null ? (lang === "ko" ? "확인 중..." : "Checking...") : status.geminiConfigured ? (lang === "ko" ? "사용 가능" : "Available") : (lang === "ko" ? "사용 불가" : "Unavailable")}
             </span>
           </div>
         </div>
-
-        {!status.backendUp && (
+        {status.backendUp === false && (
           <div className="hint-box">
             {lang === "ko"
-              ? "백엔드가 꺼져 있어요. 터미널에서 backend 폴더로 이동해 npm run dev를 실행해주세요."
-              : "The backend isn't running. Open a terminal, cd into the backend folder, and run npm run dev."}
-          </div>
-        )}
-        {status.backendUp && !status.geminiConfigured && (
-          <div className="hint-box">
-            {lang === "ko"
-              ? "백엔드는 실행 중이지만 Gemini API 키가 설정되지 않았어요. backend/.env를 확인해주세요."
-              : "Backend is running, but no Gemini API key is configured. Check backend/.env."}
+              ? "AI 서버가 깨어나는 중이거나 잠시 연결할 수 없어요. 1분 후 새로고침 버튼을 눌러주세요."
+              : "The AI server may be waking up or briefly unavailable. Press refresh in a minute."}
           </div>
         )}
       </div>
@@ -134,50 +118,28 @@ export default function Settings() {
       </div>
 
       <div className="card">
-        <div className="card-title-row"><span className="card-title"><Info size={15} style={{ marginRight: 6, verticalAlign: -2 }} />{t("architectureTitle")}</span></div>
-        <div className="arch-row">
-          <div className="arch-box">
-            <div className="arch-label">{t("architectureCurrent")}</div>
-            <div className="arch-flow">React → Express (local) → Gemini API</div>
-          </div>
-          <div className="arch-box arch-box-muted">
-            <div className="arch-label">{t("architectureFuture")}</div>
-            <div className="arch-flow">React → Hosted Backend → Cloud Database → Gemini API → Moneo</div>
-          </div>
-        </div>
-        <p className="arch-note">
-          {lang === "ko"
-            ? "이 로컬 데모는 내 컴퓨터에서 실행되는 백엔드를 사용해 Gemini API 키를 안전하게 보호해요. 온라인 배포를 위해서는 호스팅과 클라우드 데이터베이스가 추가로 필요합니다."
-            : "This local demo uses a backend running on your own computer to keep the Gemini API key safe. Making Moneo available online would additionally need hosting and a cloud database."}
-        </p>
-      </div>
-
-      <div className="card">
         <div className="card-title-row"><span className="card-title">{t("aboutMoneo")}</span></div>
         <p className="arch-note">{t("aboutText")}</p>
         <p className="disclaimer">{t("disclaimer")}</p>
       </div>
 
       <div className="card">
-        <div className="card-title-row"><span className="card-title"><Wand2 size={15} style={{ marginRight: 6, verticalAlign: -2 }} />{t("demoTools")}</span></div>
-        <p className="arch-note" style={{ marginBottom: 12 }}>{t("demoToolsDesc")}</p>
-        {!confirmAction ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <button className="btn-secondary" style={{ justifyContent: "flex-start" }} onClick={() => setConfirmAction("sample")}>
-              <RotateCcw size={15} style={{ marginRight: 8 }} /> {t("generateSampleMonth")}
-            </button>
-            <button className="btn-danger-outline" onClick={() => setConfirmAction("clear")}>
-              <Trash2 size={15} /> {t("clearAllData")}
-            </button>
-          </div>
+        <div className="card-title-row"><span className="card-title"><Trash2 size={15} style={{ marginRight: 6, verticalAlign: -2 }} />{lang === "ko" ? "데이터" : "Your data"}</span></div>
+        <p className="arch-note" style={{ marginBottom: 12 }}>
+          {lang === "ko"
+            ? "모든 거래, 예산, 목표, 메모를 삭제하고 처음 상태로 되돌려요. 되돌릴 수 없어요."
+            : "Delete all your transactions, budgets, goals and notes and start fresh. This can't be undone."}
+        </p>
+        {confirmAction !== "clear" ? (
+          <button className="btn-danger-outline" onClick={() => setConfirmAction("clear")}>
+            <Trash2 size={15} /> {t("clearAllData")}
+          </button>
         ) : (
           <div>
-            <p style={{ fontSize: 13, marginBottom: 10 }}>
-              {confirmAction === "sample" ? t("resetConfirm") : t("clearConfirm")}
-            </p>
+            <p style={{ fontSize: 13, marginBottom: 10 }}>{t("clearConfirm")}</p>
             <div style={{ display: "flex", gap: 8 }}>
-              <button className="btn-danger" onClick={handleConfirm}>{t("confirm")}</button>
-              <button className="btn-secondary" onClick={() => setConfirmAction(null)}>{t("cancel")}</button>
+              <button className="btn-danger" onClick={handleConfirm} disabled={working}>{working ? "..." : t("confirm")}</button>
+              <button className="btn-secondary" onClick={() => setConfirmAction(null)} disabled={working}>{t("cancel")}</button>
             </div>
           </div>
         )}

@@ -20,23 +20,41 @@ export default function Budgets() {
   const usedCategories = new Set(budgets.map((b) => b.category));
   const availableCategories = CATEGORIES.filter((c) => !usedCategories.has(c.id));
 
+  // Always start the form on a category that doesn't have a budget yet.
+  // Before, it defaulted to "food" even when food already had a budget —
+  // the dropdown *looked* like it showed another category, but saving
+  // created a duplicate food budget.
+  function openForm() {
+    setForm({ category: availableCategories[0]?.id || "food", limit: "" });
+    setShowForm(true);
+  }
+
   function handleSubmit(e) {
     e.preventDefault();
-    if (!form.limit || isNaN(Number(form.limit))) return;
+    const limit = Number(form.limit);
+    if (!Number.isFinite(limit) || limit <= 0) {
+      showToast(lang === "ko" ? "0보다 큰 금액을 입력해주세요." : "Please enter an amount greater than 0.", "error");
+      return;
+    }
+    if (usedCategories.has(form.category)) return;
     const isFirst = budgets.length === 0;
-    addBudget({ category: form.category, limit: Number(form.limit) });
+    addBudget({ category: form.category, limit });
     unlockAchievement("budget_created");
     showToast(lang === "ko" ? "예산이 생성됐어요." : "Budget created.");
     if (isFirst) setCelebrateTrigger((n) => n + 1);
     setShowForm(false);
-    setForm({ category: availableCategories[1]?.id || "food", limit: "" });
+  }
+
+  function handleDelete(b) {
+    if (!window.confirm(lang === "ko" ? `${categoryLabel(b.category, lang)} 예산을 삭제할까요?` : `Delete the ${categoryLabel(b.category, lang)} budget?`)) return;
+    deleteBudget(b.id);
   }
 
   return (
     <div className="page">
       <div className="page-header">
         <h1>{t("budgets")}</h1>
-        <button className="btn-primary" onClick={() => setShowForm(true)} disabled={availableCategories.length === 0}>
+        <button className="btn-primary" onClick={openForm} disabled={availableCategories.length === 0}>
           <Plus size={16} /> {t("createBudget")}
         </button>
       </div>
@@ -51,7 +69,7 @@ export default function Budgets() {
                 <div className="budget-card-title">{categoryLabel(b.category, lang)}</div>
                 <div className="budget-card-sub">{currency(b.spent, lang)} / {currency(b.limit, lang)}</div>
               </div>
-              <button className="icon-btn-ghost" onClick={() => deleteBudget(b.id)}><Trash2 size={14} /></button>
+              <button className="icon-btn-ghost" onClick={() => handleDelete(b)}><Trash2 size={14} /></button>
             </div>
             <ProgressBar pct={b.pct} color={b.status === "over" ? "#F87171" : b.status === "close" ? "#FBBF24" : "#10B981"} />
             <div className="budget-card-footer">
@@ -79,13 +97,13 @@ export default function Budgets() {
                 <h2>{t("createBudget")}</h2>
                 <button onClick={() => setShowForm(false)}><X size={18} /></button>
               </div>
-              <form onSubmit={handleSubmit} className="tx-form">
+              <form onSubmit={handleSubmit} className="tx-form" noValidate>
                 <label>{t("category")}</label>
                 <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
                   {availableCategories.map((c) => <option key={c.id} value={c.id}>{categoryLabel(c.id, lang)}</option>)}
                 </select>
                 <label>{t("monthlyBudget")}</label>
-                <input type="number" value={form.limit} onChange={(e) => setForm({ ...form, limit: e.target.value })} required />
+                <input type="number" inputMode="numeric" min="1" value={form.limit} onChange={(e) => setForm({ ...form, limit: e.target.value })} />
                 <button type="submit" className="btn-primary btn-block" style={{ marginTop: 14 }}>{t("save")}</button>
               </form>
             </motion.div>

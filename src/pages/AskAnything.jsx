@@ -40,6 +40,12 @@ export default function AskAnything() {
   const [typewriterText, setTypewriterText] = useState("");
   const messagesEndRef = useRef(null);
   const typewriterIntervalRef = useRef(null);
+  // Set when WE just created a thread mid-send. Without this, switching to the
+  // new thread triggered a fetch that came back empty and wiped the user's
+  // just-typed message off the screen while waiting for the reply.
+  const skipNextLoadRef = useRef(null);
+  const activeThreadRef = useRef(null);
+  activeThreadRef.current = activeThreadId;
 
   useEffect(() => {
     if (!user) return;
@@ -54,10 +60,14 @@ export default function AskAnything() {
 
   useEffect(() => {
     if (!activeThreadId) { setMessages([]); return; }
+    if (skipNextLoadRef.current === activeThreadId) { skipNextLoadRef.current = null; return; }
+    let cancelled = false;
+    setError(null);
     setLoadingMessages(true);
     chatService.listMessages(activeThreadId)
-      .then((msgs) => { setMessages(msgs); setLoadingMessages(false); })
-      .catch((err) => { console.error(err); setLoadingMessages(false); });
+      .then((msgs) => { if (!cancelled) { setMessages(msgs); setLoadingMessages(false); } })
+      .catch((err) => { console.error(err); if (!cancelled) setLoadingMessages(false); });
+    return () => { cancelled = true; };
   }, [activeThreadId]);
 
   useEffect(() => {
@@ -84,6 +94,7 @@ export default function AskAnything() {
   async function ensureThread() {
     if (activeThreadId) return activeThreadId;
     const thread = await chatService.createThread(user.id);
+    skipNextLoadRef.current = thread.id;
     setThreads((prev) => [thread, ...prev]);
     setActiveThreadId(thread.id);
     return thread.id;
@@ -100,24 +111,29 @@ export default function AskAnything() {
     } catch (err) { console.error(err); }
   }
 
-  async function handleSend(overrideText) {
+  async function handleSend(overrideText, { isRetry = false } = {}) {
     const text = (typeof overrideText === "string" ? overrideText : input).trim();
     if (!text || sending) return;
     setError(null);
-    setInput("");
-
-    const threadId = await ensureThread();
-    const isFirstMessage = messages.length === 0;
-
-    const tempUserMsg = { id: "temp-" + Date.now(), role: "user", content: text, created_at: new Date().toISOString() };
-    setMessages((prev) => [...prev, tempUserMsg]);
+    if (!isRetry) setInput("");
     setSending(true);
 
+    const tempUserMsg = { id: "temp-" + Date.now(), role: "user", content: text, created_at: new Date().toISOString() };
+    let threadId = activeThreadId;
+    const isFirstMessage = !messages.some((m) => m.role === "assistant");
+
     try {
-      const reply = await chatService.sendMessage({ threadId, message: text, lang });
+      threadId = await ensureThread();
+      if (!isRetry) setMessages((prev) => [...prev, tempUserMsg]);
+
+      const reply = await chatService.sendMessage({ threadId, message: text, lang, skipUserSave: isRetry });
       const fresh = await chatService.listMessages(threadId);
-      setMessages(fresh);
-      runTypewriter(reply.id, reply.content);
+      // User may have switched to another chat while waiting — don't paint
+      // this thread's messages into that one.
+      if (activeThreadRef.current === threadId) {
+        setMessages(fresh);
+        runTypewriter(reply.id, reply.content);
+      }
 
       if (isFirstMessage) {
         chatService.generateTitleForThread({ threadId, firstMessage: text, lang }).then((title) => {
@@ -130,14 +146,29 @@ export default function AskAnything() {
       });
     } catch (err) {
       console.error(err);
-      setError({ message: chatService.friendlyChatError(err, lang), retryText: text });
-      setMessages((prev) => prev.filter((m) => m.id !== tempUserMsg.id));
+      // The user's message may already be saved even though the AI reply
+      // failed. Reload from the database so the screen matches reality, and
+      // make Retry reuse that saved message instead of saving a duplicate.
+      let alreadySaved = false;
+      if (threadId) {
+        try {
+          const fresh = await chatService.listMessages(threadId);
+          const last = fresh[fresh.length - 1];
+          alreadySaved = Boolean(last && last.role === "user" && last.content === text);
+          if (activeThreadRef.current === threadId) setMessages(fresh);
+        } catch {
+          setMessages((prev) => prev.filter((m) => m.id !== tempUserMsg.id));
+        }
+      }
+      if (!alreadySaved && !isRetry) setInput(text); // give the text back so it isn't lost
+      setError({ message: chatService.friendlyChatError(err, lang), retryText: alreadySaved ? text : null });
     } finally {
       setSending(false);
     }
   }
 
   async function handleRegenerate(msg) {
+    if (sending) return;
     const idx = messages.findIndex((m) => m.id === msg.id);
     const userMsg = [...messages].slice(0, idx).reverse().find((m) => m.role === "user");
     if (!userMsg) return;
@@ -245,7 +276,7 @@ export default function AskAnything() {
               <p>{lang === "ko" ? "궁금한 걸 자유롭게 물어보세요 — 이 대화는 기억돼요." : "Ask about anything you're curious about — this conversation is remembered."}</p>
               <div className="chat-starter-grid">
                 {starters.map((s) => (
-                  <button key={s} className="chat-starter-chip" onClick={() => handleSend(s)}>{s}</button>
+                  <button key={s} className="chat-starter-chip" onClick={() => handleSend(s)} disabled={sending}>{s}</button>
                 ))}
               </div>
             </div>
@@ -261,7 +292,7 @@ export default function AskAnything() {
                   {msg.role === "assistant" && msg.id !== typewriterId && (
                     <div className="chat-msg-actions">
                       <button onClick={() => copyMessage(msg.content)} title={lang === "ko" ? "복사" : "Copy"}><Copy size={13} /></button>
-                      <button onClick={() => handleRegenerate(msg)} title={lang === "ko" ? "다시 생성" : "Regenerate"}><RotateCcw size={13} /></button>
+                      <button onClick={() => handleRegenerate(msg)} disabled={sending} title={lang === "ko" ? "다시 생성" : "Regenerate"}><RotateCcw size={13} /></button>
                     </div>
                   )}
                 </div>
@@ -279,13 +310,13 @@ export default function AskAnything() {
             <div className="chat-error-row">
               <AlertCircle size={14} />
               <span>{error.message}</span>
-              {error.retryText && <button onClick={() => handleSend(error.retryText)}>{lang === "ko" ? "다시 시도" : "Retry"}</button>}
+              {error.retryText && <button onClick={() => handleSend(error.retryText, { isRetry: true })}>{lang === "ko" ? "다시 시도" : "Retry"}</button>}
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        <form className="chat-input-row" onSubmit={(e) => { e.preventDefault(); handleSend(); }}>
+        <form className="chat-input-row" noValidate onSubmit={(e) => { e.preventDefault(); handleSend(); }}>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}

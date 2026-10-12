@@ -2,8 +2,10 @@
 // transactions + budgets + goals. Nothing here touches localStorage
 // directly, so it's easy to test and reason about.
 
+import { parseLocalDate, toLocalISODate } from "./dates";
+
 function isThisMonth(dateStr) {
-  const d = new Date(dateStr);
+  const d = parseLocalDate(dateStr);
   const now = new Date();
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
 }
@@ -55,7 +57,7 @@ export function dailySpendSeries(transactions) {
   monthTransactions(transactions)
     .filter((t) => t.type === "expense")
     .forEach((t) => {
-      const day = new Date(t.date).getDate();
+      const day = parseLocalDate(t.date).getDate();
       map[day] = (map[day] || 0) + Number(t.amount);
     });
   const days = Object.keys(map).map(Number).sort((a, b) => a - b);
@@ -69,7 +71,7 @@ export function monthComparison(transactions) {
   const lastMonthExpenses = transactions
     .filter((t) => t.type === "expense")
     .filter((t) => {
-      const d = new Date(t.date);
+      const d = parseLocalDate(t.date);
       return d.getFullYear() === lastMonthDate.getFullYear() && d.getMonth() === lastMonthDate.getMonth();
     })
     .reduce((s, t) => s + Number(t.amount), 0);
@@ -81,11 +83,12 @@ export function budgetStatus(budgets, transactions) {
   const spend = spendingByCategory(transactions);
   return budgets.map((b) => {
     const spent = spend[b.category] || 0;
-    const pct = b.limit > 0 ? Math.min(999, Math.round((spent / b.limit) * 100)) : 0;
+    const limit = Number(b.limit) || 0;
+    const pct = limit > 0 ? Math.min(999, Math.round((spent / limit) * 100)) : 0;
     let status = "ok";
     if (pct >= 100) status = "over";
     else if (pct >= 80) status = "close";
-    return { ...b, spent, remaining: b.limit - spent, pct, status };
+    return { ...b, limit, spent, remaining: limit - spent, pct, status };
   });
 }
 
@@ -105,7 +108,7 @@ export function financialHealthScore(transactions, budgets, goals) {
 
   // Goal progress factor
   const goalFactor = goals.length > 0
-    ? goals.reduce((s, g) => s + Math.min(1, g.current / (g.target || 1)), 0) / goals.length
+    ? goals.reduce((s, g) => s + goalProgress(g), 0) / goals.length
     : 0.5;
 
   const score = Math.round(
@@ -114,30 +117,37 @@ export function financialHealthScore(transactions, budgets, goals) {
   return Math.max(0, Math.min(100, score));
 }
 
+// Streak = consecutive days on which the user actually logged something
+// AND (if they have budgets) kept that day's spending within the daily
+// allowance. A day with nothing logged breaks the streak — before, days the
+// user never opened the app counted as "under budget", so being away for
+// 17 days produced a 17-day streak. Today only counts once something is
+// logged; an empty today doesn't break yesterday's streak yet.
 export function savingStreak(transactions, budgets) {
-  if (!budgets || budgets.length === 0) return 0;
-  const totalBudget = budgets.reduce((s, b) => s + Number(b.limit), 0);
-  if (totalBudget <= 0) return 0;
+  if (!transactions || transactions.length === 0) return 0;
 
+  const totalBudget = (budgets || []).reduce((s, b) => s + (Number(b.limit) || 0), 0);
   const now = new Date();
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const dailyAllowance = totalBudget / daysInMonth;
+  const dailyAllowance = totalBudget > 0 ? totalBudget / daysInMonth : Infinity;
 
-  const byDate = {};
-  transactions
-    .filter((t) => t.type === "expense")
-    .forEach((t) => { byDate[t.date] = (byDate[t.date] || 0) + Number(t.amount); });
+  const logged = new Set();
+  const spentByDate = {};
+  transactions.forEach((t) => {
+    if (!t.date) return;
+    logged.add(t.date);
+    if (t.type === "expense") spentByDate[t.date] = (spentByDate[t.date] || 0) + (Number(t.amount) || 0);
+  });
+
+  const cursor = new Date(now);
+  if (!logged.has(toLocalISODate(cursor))) cursor.setDate(cursor.getDate() - 1);
 
   let streak = 0;
-  const cursor = new Date(now);
-  for (let i = 0; i < 60; i++) {
-    const key = cursor.toISOString().slice(0, 10);
-    const spent = byDate[key] || 0;
-    if (spent <= dailyAllowance * 1.3) {
-      streak++;
-    } else {
-      break;
-    }
+  for (let i = 0; i < 366; i++) {
+    const key = toLocalISODate(cursor);
+    if (!logged.has(key)) break;
+    if ((spentByDate[key] || 0) > dailyAllowance * 1.3) break;
+    streak++;
     cursor.setDate(cursor.getDate() - 1);
   }
   return streak;
@@ -153,7 +163,7 @@ export function last6MonthsSeries(transactions) {
   return months.map(({ year, month, label }) => {
     let income = 0, expenses = 0;
     transactions.forEach((t) => {
-      const d = new Date(t.date);
+      const d = parseLocalDate(t.date);
       if (d.getFullYear() === year && d.getMonth() === month) {
         if (t.type === "income") income += Number(t.amount);
         else expenses += Number(t.amount);
@@ -177,4 +187,12 @@ export function overallBudgetStatus(budgets, transactions) {
 export function currency(n, lang = "en") {
   const val = Math.round(Number(n) || 0);
   return "₩" + val.toLocaleString(lang === "ko" ? "ko-KR" : "en-US");
+}
+
+// 0..1 progress toward a goal, safe against a 0/missing target.
+export function goalProgress(goal) {
+  const target = Number(goal?.target) || 0;
+  const current = Number(goal?.current) || 0;
+  if (target <= 0) return 0;
+  return Math.min(1, Math.max(0, current / target));
 }
