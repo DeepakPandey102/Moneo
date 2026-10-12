@@ -33,23 +33,44 @@ const BY_KEY = Object.fromEntries(ASSETS.map((a) => [a.key, a]));
 const RANGES = [1, 7, 30, 90, 365];
 const MAX_POINTS = 360;
 
-const cache = new Map();
+// ---------- caching ----------
+// "Stale-while-revalidate": once something is cached, every visitor gets it
+// INSTANTLY, and if it's older than its TTL a refresh starts in the
+// background. Only the very first request ever waits for CoinGecko.
+// Identical requests that arrive together share one upstream call.
+const cache = new Map();    // key -> { value, at }
+const inflight = new Map(); // key -> Promise
+
+function refresh(key, loader) {
+  if (inflight.has(key)) return inflight.get(key);
+  const p = loader()
+    .then((value) => {
+      cache.set(key, { value, at: Date.now() });
+      return value;
+    })
+    .finally(() => inflight.delete(key));
+  inflight.set(key, p);
+  return p;
+}
 
 async function cached(key, ttlMs, loader) {
   const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < ttlMs) return hit.value;
-  try {
-    const value = await loader();
-    cache.set(key, { value, at: Date.now() });
-    return value;
-  } catch (err) {
-    if (hit) return { ...hit.value, stale: true };
-    throw err;
+  if (hit) {
+    if (Date.now() - hit.at > ttlMs) {
+      refresh(key, loader).catch((err) => console.warn(`[market] background refresh ${key}:`, err.message));
+    }
+    const ageMs = Date.now() - hit.at;
+    // Mark as stale only when it's clearly old (refresh kept failing).
+    return ageMs > ttlMs * 3 ? { ...hit.value, stale: true } : hit.value;
   }
+  return refresh(key, loader);
 }
 
+// ---------- upstream calls ----------
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function getJson(url, headers = {}) {
-  const res = await fetch(url, { headers: { accept: "application/json", ...headers }, signal: AbortSignal.timeout(10_000) });
+  const res = await fetch(url, { headers: { accept: "application/json", ...headers }, signal: AbortSignal.timeout(12_000) });
   if (!res.ok) {
     const err = new Error(`${new URL(url).host} responded ${res.status}`);
     err.status = res.status;
@@ -58,10 +79,36 @@ async function getJson(url, headers = {}) {
   return res.json();
 }
 
+// CoinGecko rejects bursts (HTTP 429), especially from shared cloud servers
+// like Render. So calls go out one at a time with a small gap, and a 429 is
+// retried after a pause. A free "Demo" key allows a faster pace.
+let cgQueue = Promise.resolve();
+let cgLast = 0;
+
 function coingecko(path) {
-  // Optional free "Demo" key from coingecko.com raises the rate limit.
-  const headers = process.env.COINGECKO_API_KEY ? { "x-cg-demo-api-key": process.env.COINGECKO_API_KEY } : {};
-  return getJson(`${COINGECKO}${path}`, headers);
+  const hasKey = Boolean(process.env.COINGECKO_API_KEY);
+  const gapMs = hasKey ? 2200 : 4500;
+  const headers = hasKey ? { "x-cg-demo-api-key": process.env.COINGECKO_API_KEY } : {};
+
+  const run = cgQueue.then(async () => {
+    for (let attempt = 0; ; attempt++) {
+      const wait = cgLast + gapMs - Date.now();
+      if (wait > 0) await sleep(wait);
+      cgLast = Date.now();
+      try {
+        return await getJson(`${COINGECKO}${path}`, headers);
+      } catch (err) {
+        if (err.status === 429 && attempt < 2) {
+          console.warn(`[market] CoinGecko 429 on ${path.split("?")[0]}, retrying`);
+          await sleep(attempt === 0 ? 8_000 : 20_000);
+          continue;
+        }
+        throw err;
+      }
+    }
+  });
+  cgQueue = run.catch(() => {}); // keep the queue going after a failure
+  return run;
 }
 
 function downsample(points, max) {
@@ -77,44 +124,7 @@ function unavailable(res, what) {
 // GET /api/market/overview → every asset: price, changes, stats, 7-day sparkline
 router.get("/overview", async (req, res) => {
   try {
-    const value = await cached("overview", 60_000, async () => {
-      const ids = ASSETS.map((a) => a.id).join(",");
-      const rows = await coingecko(
-        `/coins/markets?vs_currency=usd&ids=${ids}&sparkline=true&price_change_percentage=1h,24h,7d,30d,1y`
-      );
-      const assets = ASSETS.map((meta) => {
-        const r = rows.find((row) => row.id === meta.id);
-        if (!r) return null;
-        return {
-          key: meta.key,
-          symbol: meta.symbol,
-          name: meta.name,
-          type: meta.type,
-          image: r.image,
-          rank: r.market_cap_rank,
-          price: r.current_price,
-          change1h: r.price_change_percentage_1h_in_currency ?? null,
-          change24h: r.price_change_percentage_24h_in_currency ?? r.price_change_percentage_24h ?? null,
-          change7d: r.price_change_percentage_7d_in_currency ?? null,
-          change30d: r.price_change_percentage_30d_in_currency ?? null,
-          change1y: r.price_change_percentage_1y_in_currency ?? null,
-          high24h: r.high_24h,
-          low24h: r.low_24h,
-          marketCap: r.market_cap,
-          volume24h: r.total_volume,
-          ath: r.ath,
-          athDate: r.ath_date,
-          athChangePct: r.ath_change_percentage,
-          atl: r.atl,
-          atlDate: r.atl_date,
-          circulatingSupply: r.circulating_supply,
-          maxSupply: r.max_supply,
-          sparkline: downsample(r.sparkline_in_7d?.price || [], 56),
-          updatedAt: r.last_updated,
-        };
-      }).filter(Boolean);
-      return { assets, source: "CoinGecko", fetchedAt: new Date().toISOString() };
-    });
+    const value = await cached("overview", 2 * 60_000, loadOverview);
     res.json(value);
   } catch (err) {
     console.error("[market/overview]", err.message);
@@ -122,10 +132,73 @@ router.get("/overview", async (req, res) => {
   }
 });
 
+async function loadOverview() {
+  const ids = ASSETS.map((a) => a.id).join(",");
+  const rows = await coingecko(
+    `/coins/markets?vs_currency=usd&ids=${ids}&sparkline=true&price_change_percentage=1h,24h,7d,30d,1y`
+  );
+  const assets = ASSETS.map((meta) => {
+    const r = rows.find((row) => row.id === meta.id);
+    if (!r) return null;
+    return {
+      key: meta.key,
+      symbol: meta.symbol,
+      name: meta.name,
+      type: meta.type,
+      image: r.image,
+      rank: r.market_cap_rank,
+      price: r.current_price,
+      change1h: r.price_change_percentage_1h_in_currency ?? null,
+      change24h: r.price_change_percentage_24h_in_currency ?? r.price_change_percentage_24h ?? null,
+      change7d: r.price_change_percentage_7d_in_currency ?? null,
+      change30d: r.price_change_percentage_30d_in_currency ?? null,
+      change1y: r.price_change_percentage_1y_in_currency ?? null,
+      high24h: r.high_24h,
+      low24h: r.low_24h,
+      marketCap: r.market_cap,
+      volume24h: r.total_volume,
+      ath: r.ath,
+      athDate: r.ath_date,
+      athChangePct: r.ath_change_percentage,
+      atl: r.atl,
+      atlDate: r.atl_date,
+      circulatingSupply: r.circulating_supply,
+      maxSupply: r.max_supply,
+      sparkline: downsample(r.sparkline_in_7d?.price || [], 56),
+      updatedAt: r.last_updated,
+    };
+  }).filter(Boolean);
+
+  // If an asset is missing from the list (CoinGecko sometimes drops one),
+  // fetch just its price so the row still shows.
+  const missing = ASSETS.filter((meta) => !assets.some((a) => a.key === meta.key));
+  if (missing.length) {
+    try {
+      const ids = missing.map((m) => m.id).join(",");
+      const simple = await coingecko(`/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`);
+      for (const meta of missing) {
+        const r = simple[meta.id];
+        if (!r?.usd) continue;
+        assets.push({
+          key: meta.key, symbol: meta.symbol, name: meta.name, type: meta.type, image: null, rank: null,
+          price: r.usd, change24h: r.usd_24h_change ?? null, change1h: null, change7d: null, change30d: null, change1y: null,
+          high24h: null, low24h: null, marketCap: r.usd_market_cap ?? null, volume24h: r.usd_24h_vol ?? null,
+          ath: null, athDate: null, athChangePct: null, atl: null, atlDate: null,
+          circulatingSupply: null, maxSupply: null, sparkline: [], updatedAt: null,
+        });
+      }
+      assets.sort((a, b) => ASSETS.findIndex((m) => m.key === a.key) - ASSETS.findIndex((m) => m.key === b.key));
+    } catch (err) {
+      console.warn("[market] fallback price failed:", err.message);
+    }
+  }
+  return { assets, source: "CoinGecko", fetchedAt: new Date().toISOString() };
+}
+
 // GET /api/market/global → whole-market indicators + Fear & Greed (30 days)
 router.get("/global", async (req, res) => {
   try {
-    const value = await cached("global", 5 * 60_000, async () => {
+    const value = await cached("global", 10 * 60_000, async () => {
       const [globalRes, fngRes] = await Promise.allSettled([coingecko("/global"), getJson(FEAR_GREED)]);
       if (globalRes.status === "rejected" && fngRes.status === "rejected") throw globalRes.reason;
 
@@ -167,17 +240,36 @@ router.get("/history/:asset", async (req, res) => {
   }
   try {
     // Short ranges change faster, so they're refreshed more often.
-    const ttl = days === 1 ? 5 * 60_000 : 30 * 60_000;
-    const value = await cached(`history:${meta.key}:${days}`, ttl, async () => {
-      const json = await coingecko(`/coins/${meta.id}/market_chart?vs_currency=usd&days=${days}`);
-      const points = downsample((json.prices || []).map(([t, price]) => ({ t, price })), MAX_POINTS);
-      return { asset: meta.key, days, points, fetchedAt: new Date().toISOString() };
-    });
+    const ttl = days === 1 ? 10 * 60_000 : days <= 7 ? 30 * 60_000 : 2 * 60 * 60_000;
+    const value = await cached(`history:${meta.key}:${days}`, ttl, () => loadHistory(meta, days));
     res.json(value);
   } catch (err) {
     console.error("[market/history]", err.message);
     unavailable(res, "Price history");
   }
 });
+
+async function loadHistory(meta, days) {
+  const json = await coingecko(`/coins/${meta.id}/market_chart?vs_currency=usd&days=${days}`);
+  const points = downsample((json.prices || []).map(([t, price]) => ({ t, price })), MAX_POINTS);
+  return { asset: meta.key, days, points, fetchedAt: new Date().toISOString() };
+}
+
+// Fill the cache right after the server starts (Render wakes it on the first
+// visit), so the Market page usually opens instantly. Then keep prices fresh
+// while the server is awake.
+export function warmMarketCache() {
+  const jobs = [
+    ["overview", loadOverview],
+    ["history:bitcoin:30", () => loadHistory(BY_KEY.bitcoin, 30)],
+    ["history:gold:30", () => loadHistory(BY_KEY.gold, 30)],
+  ];
+  for (const [key, loader] of jobs) {
+    refresh(key, loader).catch((err) => console.warn(`[market] warm-up ${key}:`, err.message));
+  }
+  setInterval(() => {
+    refresh("overview", loadOverview).catch(() => {});
+  }, 3 * 60_000).unref();
+}
 
 export default router;

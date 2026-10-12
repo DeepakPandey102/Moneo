@@ -1012,3 +1012,5 @@ select option:checked { background: #3B5BDB; color: #FFFFFF; }
   .mk-range { flex: 1; min-width: 0; padding: 0 4px; }
   .mk-chart-price { font-size: 20px; }
 }
+
+.mk-retry { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; height: 100%; text-align: center; }

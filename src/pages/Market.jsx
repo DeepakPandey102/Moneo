@@ -164,6 +164,7 @@ export default function Market() {
   const [compareWith, setCompareWith] = useState("gold");
   const [days, setDays] = useState(30);
   const [histories, setHistories] = useState({}); // "bitcoin:30" -> points
+  const [histErrors, setHistErrors] = useState({}); // "bitcoin:30" -> true
   const [show, setShow] = useState({ ma20: true, ma50: true, rsi: true });
   const [filter, setFilter] = useState("all"); // all | crypto | commodity
   const [sort, setSort] = useState("default"); // default | gainers | losers
@@ -186,10 +187,14 @@ export default function Market() {
   }, []);
 
   const loadHistory = useCallback(async (asset, range, fresh = false) => {
+    const key = `${asset}:${range}`;
+    setHistErrors((prev) => ({ ...prev, [key]: false }));
     try {
       const h = await getMarketHistory(asset, range, { fresh });
-      setHistories((prev) => ({ ...prev, [`${asset}:${range}`]: h.points }));
-    } catch { /* chart shows its own empty state */ }
+      setHistories((prev) => ({ ...prev, [key]: h.points }));
+    } catch {
+      setHistErrors((prev) => ({ ...prev, [key]: true }));
+    }
   }, []);
 
   useEffect(() => {
@@ -426,7 +431,14 @@ export default function Market() {
 
           <div style={{ height: 290 }}>
             {!chart ? (
-              <div className="empty-state">{L("Loading chart…", "차트를 불러오는 중…")}</div>
+              histErrors[`${selected}:${days}`] ? (
+                <div className="empty-state mk-retry">
+                  <span>{L("Couldn't load the chart. The price service is busy.", "차트를 불러오지 못했어요. 시세 서비스가 바빠요.")}</span>
+                  <button type="button" className="btn-secondary" onClick={() => loadHistory(selected, days)}>{L("Try again", "다시 시도")}</button>
+                </div>
+              ) : (
+                <div className="empty-state">{L("Loading chart… (the first load can take up to a minute)", "차트를 불러오는 중… (처음엔 최대 1분 걸릴 수 있어요)")}</div>
+              )
             ) : (
               <ResponsiveContainer>
                 <ComposedChart data={chart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="mk">
@@ -532,7 +544,14 @@ export default function Market() {
             </label>
           </div>
           {!comparison ? (
-            <div className="empty-state">{L("Loading…", "불러오는 중…")}</div>
+            histErrors[`${selected}:${days}`] || histErrors[`${compareWith}:${days}`] ? (
+              <div className="empty-state mk-retry">
+                <span>{L("Couldn't load the comparison.", "비교 데이터를 불러오지 못했어요.")}</span>
+                <button type="button" className="btn-secondary" onClick={() => { loadHistory(selected, days); loadHistory(compareWith, days); }}>{L("Try again", "다시 시도")}</button>
+              </div>
+            ) : (
+              <div className="empty-state">{L("Loading…", "불러오는 중…")}</div>
+            )
           ) : (
             <>
               <div style={{ height: 210 }}>

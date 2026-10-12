@@ -4,7 +4,7 @@ import cors from "cors";
 import aiRoutes from "./routes/ai.js";
 import receiptRoutes from "./routes/receipt.js";
 import chatRoutes from "./routes/chat.js";
-import marketRoutes from "./routes/market.js";
+import marketRoutes, { warmMarketCache } from "./routes/market.js";
 import { isConfigured, currentModel } from "./services/geminiService.js";
 
 const app = express();
@@ -19,12 +19,15 @@ const PORT = process.env.PORT || 4000;
 // everyone), any website you visited could quietly use your Gemini key
 // through your running backend. Add more origins (e.g. your Vercel URL)
 // comma-separated in ALLOWED_ORIGINS.
+// Forgiving about small typos in the Render setting: quotes, spaces and a
+// trailing "/" are ignored ("https://x.vercel.app/" works like "https://x.vercel.app").
+const normalizeOrigin = (o) => String(o || "").trim().replace(/^["']|["']$/g, "").replace(/\/+$/, "").toLowerCase();
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:5173,http://127.0.0.1:5173")
-  .split(",").map((o) => o.trim()).filter(Boolean);
+  .split(",").map(normalizeOrigin).filter(Boolean);
 app.use(cors({
   origin(origin, cb) {
     // no Origin header = curl/Postman/same-origin — allow
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    if (!origin || allowedOrigins.includes(normalizeOrigin(origin))) return cb(null, true);
     return cb(null, false);
   },
 }));
@@ -72,4 +75,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Moneo backend running at http://localhost:${PORT}`);
   console.log(`Gemini configured: ${isConfigured() ? "yes" : "NO — add GEMINI_API_KEY in backend/.env"}`);
+  console.log(`Allowed origins: ${allowedOrigins.join(", ")}`);
+  console.log(`CoinGecko key: ${process.env.COINGECKO_API_KEY ? "yes" : "no (slower, may be rate-limited)"}`);
+  if (process.env.NODE_ENV !== "test") warmMarketCache();
 });
