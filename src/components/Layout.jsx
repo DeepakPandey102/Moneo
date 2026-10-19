@@ -29,7 +29,7 @@ export default function Layout() {
     { to: "/app/receipts", label: L("Receipts", "영수증"), icon: ReceiptText, matchSearch: "source=ai" },
     { to: "/app/notes", label: t("notes"), icon: StickyNote },
     { to: "/app/analytics", label: t("analytics"), icon: BarChart3 },
-    { to: "/app/market", label: L("Market", "시장"), icon: CandlestickChart },
+    { to: "/app/market", label: L("Financial Market Insights", "시장"), icon: CandlestickChart },
     { to: "/app/settings", label: t("settings"), icon: Settings },
   ];
   const MOBILE_PRIMARY = ["/app/dashboard", "/app/transactions", "/app/assistant", "/app/budgets"];
