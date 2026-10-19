@@ -279,7 +279,7 @@ export default function Market() {
     <div className="page market-page">
       <div className="page-header mk-header">
         <div>
-          <h1>{L("Market", "시장")}</h1>
+          <h1>{L("Financial Market Insights", "금융시장 인사이트")}</h1>
           <p className="mk-sub">{L("Crypto and gold prices, trends and indicators in US dollars", "암호화폐·금 시세, 추세, 지표 (미국 달러 기준)")}</p>
         </div>
         <div className="mk-header-actions">
