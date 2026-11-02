@@ -32,7 +32,7 @@ const META = {
 
 const UP = "#34D399";
 const DOWN = "#F87171";
-const TOOLTIP_STYLE = { background: "#0E1433", border: "1px solid rgba(140,160,255,0.22)", borderRadius: 10, color: "#F4F6FF" };
+const TOOLTIP_STYLE = { background: "#141129", border: "1px solid rgba(167,139,250,0.22)", borderRadius: 10, color: "#F5F3FF" };
 
 const FNG_LABELS_KO = {
   "Extreme Fear": "극단적 공포", Fear: "공포", Neutral: "중립", Greed: "탐욕", "Extreme Greed": "극단적 탐욕",
@@ -57,7 +57,7 @@ function AssetIcon({ asset, size = 32 }) {
   if (asset.key === "gold") return <GoldArt size={size} />;
   if (!asset.image || broken) {
     return (
-      <span className="mk-icon-fallback" style={{ width: size, height: size, background: META[asset.key]?.color || "#4F7BFF" }}>
+      <span className="mk-icon-fallback" style={{ width: size, height: size, background: META[asset.key]?.color || "#7C5CFF" }}>
         {asset.symbol?.[0]}
       </span>
     );
@@ -112,8 +112,8 @@ function FearGreedGauge({ value }) {
       {zones.map(([a, b, c]) => <path key={a} d={arc(a + 0.8, b - 0.8)} stroke={c} strokeWidth="9" fill="none" strokeLinecap="round" opacity="0.9" />)}
       {value != null && (
         <>
-          <line x1={cx} y1={cy} x2={nx} y2={ny} stroke="#F4F6FF" strokeWidth="2.5" strokeLinecap="round" />
-          <circle cx={cx} cy={cy} r="4.5" fill="#F4F6FF" />
+          <line x1={cx} y1={cy} x2={nx} y2={ny} stroke="#F5F3FF" strokeWidth="2.5" strokeLinecap="round" />
+          <circle cx={cx} cy={cy} r="4.5" fill="#F5F3FF" />
         </>
       )}
     </svg>
@@ -225,7 +225,7 @@ export default function Market() {
   const assets = overview?.assets || [];
   const asset = assets.find((a) => a.key === selected);
   const other = assets.find((a) => a.key === compareWith);
-  const color = META[selected]?.color || "#4F7BFF";
+  const color = META[selected]?.color || "#7C5CFF";
 
   const listed = useMemo(() => {
     let rows = assets.filter((a) => filter === "all" || a.type === filter);

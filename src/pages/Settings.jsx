@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Globe, Bot, User, RotateCcw, Trash2, Info, Trophy, Wand2, RefreshCw, Server, LogOut } from "lucide-react";
+import { Globe, Bot, User, RotateCcw, Trash2, Info, Trophy, Wand2, RefreshCw, Server, LogOut, Compass } from "lucide-react";
+import { START_TOUR_EVENT } from "../components/CoachTour";
 import { useApp } from "../context/AppContext";
 import AchievementCard, { ACHIEVEMENT_DEFS } from "../components/AchievementCard";
 import { getBackendStatus } from "../services/assistantService";
@@ -115,6 +116,16 @@ export default function Settings() {
             <AchievementCard key={key} achievementKey={key} unlocked={unlockedKeys.has(key)} lang={lang} />
           ))}
         </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title-row"><span className="card-title"><Compass size={15} style={{ marginRight: 6, verticalAlign: -2 }} />{lang === "ko" ? "앱 둘러보기" : "App tour"}</span></div>
+        <p className="arch-note" style={{ marginBottom: 12 }}>
+          {lang === "ko" ? "주요 기능을 하나씩 짚어주는 안내를 다시 볼 수 있어요." : "See the step-by-step guide to the main features again."}
+        </p>
+        <button className="btn-secondary" onClick={() => window.dispatchEvent(new Event(START_TOUR_EVENT))}>
+          <Compass size={15} style={{ marginRight: 6 }} />{lang === "ko" ? "안내 다시 보기" : "Replay tour"}
+        </button>
       </div>
 
       <div className="card">

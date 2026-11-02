@@ -8,7 +8,7 @@ import {
 import { useApp } from "../context/AppContext";
 import CategoryIcon from "../components/CategoryIcon";
 import Celebration from "../components/Celebration";
-import { CATEGORIES, PAYMENT_METHODS, categoryLabel } from "../data/categories";
+import { CATEGORIES, ALL_CATEGORIES, PAYMENT_METHODS, categoryLabel, categoriesFor, defaultCategory } from "../data/categories";
 import { currency } from "../utils/calculations";
 import { extractReceiptData, friendlyReceiptError, warmUpBackend } from "../services/assistantService";
 import { todayLocal, parseLocalDate } from "../utils/dates";
@@ -319,10 +319,10 @@ export default function Transactions() {
       <div className="page-header">
         <h1>{t("transactions")}</h1>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn-secondary" onClick={triggerReceiptUpload}>
+          <button className="btn-secondary" data-tour="tx-scan" onClick={triggerReceiptUpload}>
             <Camera size={15} style={{ marginRight: 6 }} />{lang === "ko" ? "영수증 스캔" : "Scan Receipt"}
           </button>
-          <button className="btn-primary" onClick={openAdd}><Plus size={16} /> {t("addTransaction")}</button>
+          <button className="btn-primary" data-tour="tx-add" onClick={openAdd}><Plus size={16} /> {t("addTransaction")}</button>
         </div>
         <input ref={fileInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handleReceiptFile} />
       </div>
@@ -334,7 +334,7 @@ export default function Transactions() {
         </div>
         <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
           <option value="all">{t("filterCategory")}</option>
-          {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{categoryLabel(c.id, lang)}</option>)}
+          {ALL_CATEGORIES.map((c) => <option key={c.id} value={c.id}>{categoryLabel(c.id, lang)}</option>)}
         </select>
         <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
           <option value="all">{t("filterType")}</option>
@@ -396,16 +396,18 @@ export default function Transactions() {
 
               <form onSubmit={handleSubmit} className="tx-form" noValidate>
                 <div className="form-row">
-                  <button type="button" className={"pill " + (form.type === "expense" ? "active-red" : "")} onClick={() => setForm({ ...form, type: "expense" })}>{t("expense_")}</button>
-                  <button type="button" className={"pill " + (form.type === "income" ? "active-green" : "")} onClick={() => setForm({ ...form, type: "income" })}>{t("income_")}</button>
+                  <button type="button" className={"pill " + (form.type === "expense" ? "active-red" : "")} onClick={() => setForm({ ...form, type: "expense", category: categoriesFor("expense").some((c) => c.id === form.category) ? form.category : defaultCategory("expense") })}>{t("expense_")}</button>
+                  <button type="button" className={"pill " + (form.type === "income" ? "active-green" : "")} onClick={() => setForm({ ...form, type: "income", category: categoriesFor("income").some((c) => c.id === form.category) ? form.category : defaultCategory("income") })}>{t("income_")}</button>
                 </div>
                 <label>{t("amount")}</label>
                 <input type="number" inputMode="numeric" min="1" step="any" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
                 <label>{t("category")}</label>
                 <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-                  {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{categoryLabel(c.id, lang)}</option>)}
+                  {categoriesFor(form.type).map((c) => <option key={c.id} value={c.id}>{categoryLabel(c.id, lang)}</option>)}
+                  {/* an older income saved with an expense category still shows its value */}
+                  {!categoriesFor(form.type).some((c) => c.id === form.category) && <option value={form.category}>{categoryLabel(form.category, lang)}</option>}
                 </select>
-                <label>{t("merchant")}</label>
+                <label>{form.type === "income" ? (lang === "ko" ? "받은 곳 (회사, 고객 등)" : "From (company, client…)") : t("merchant")}</label>
                 <input type="text" value={form.merchant} onChange={(e) => setForm({ ...form, merchant: e.target.value })} />
                 <div className="form-row-2">
                   <div>

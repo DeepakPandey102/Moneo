@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Trash2, X, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useApp } from "../context/AppContext";
@@ -29,6 +30,16 @@ export default function Budgets() {
     setShowForm(true);
   }
 
+  // /app/budgets?action=add (from the Dashboard's "Create budget" step) opens the form.
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("action") === "add" && availableCategories.length > 0) {
+      openForm();
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   function handleSubmit(e) {
     e.preventDefault();
     const limit = Number(form.limit);
@@ -54,7 +65,7 @@ export default function Budgets() {
     <div className="page">
       <div className="page-header">
         <h1>{t("budgets")}</h1>
-        <button className="btn-primary" onClick={openForm} disabled={availableCategories.length === 0}>
+        <button className="btn-primary" data-tour="budget-add" onClick={openForm} disabled={availableCategories.length === 0}>
           <Plus size={16} /> {t("createBudget")}
         </button>
       </div>

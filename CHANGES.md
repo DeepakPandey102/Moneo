@@ -1,3 +1,16 @@
+## New look (November 2026)
+
+- **New design** based on the team mockup: purple theme across the app, new rounded "m" logo and lowercase wordmark (also the browser icon), solid sidebar icons, glowing active item, Budgets count badge, and the profile chip at the bottom of the sidebar.
+- **Home dashboard rebuilt**: mountain header with greeting, budget-first banner, three stat cards (balance and spending with sparklines, monthly budget with progress), Spending Overview (donut + spending by weekday, month picker), Quick Actions, Recent Activity, and an **Ask Anything** panel with the robot, suggestion chips and chat. The panel and Quick Actions can be closed; a floating button brings the panel back.
+- **Income categories**: income now uses Job / Salary, Business, Investment, Side job / Freelance, Allowance & gifts, Scholarship and Other income; expenses keep Food, Transport, etc. The form switches lists with the type, and the "Merchant" field reads "From" for income.
+
+## UX update (October 2026)
+
+- **Ask Anything redesigned** like a modern AI tool: chats grouped by date with search, inline rename/delete, a greeting with suggestion cards, full-width answers with a Moneo mark, copy buttons on answers and code blocks, a growing composer (Enter to send, Shift+Enter for a new line, safe with Korean input), a jump-to-latest button and a mobile chat drawer.
+- **Receipts removed from the navigation and the Dashboard.** Scanning lives in Transactions → "Scan Receipt" (old /app/receipts links still redirect there).
+- **Budget first:** nav order is Home → Budgets → Transactions (desktop and mobile), and the Dashboard's empty state shows two numbered steps: 1. Create a budget, 2. Add a transaction.
+- **Coach marks:** a spotlight tour (src/components/CoachTour.jsx) that starts on first login, highlights the key features across pages, and can be replayed from Settings → App tour.
+
 ## Duplicate receipts + Market page (October 2026)
 
 **Duplicate receipt popup** (`src/utils/duplicates.js`, `src/pages/Transactions.jsx`)

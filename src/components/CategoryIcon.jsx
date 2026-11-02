@@ -2,6 +2,7 @@ import React from "react";
 import {
   UtensilsCrossed, Bus, ShoppingBag, Popcorn, Receipt,
   GraduationCap, HeartPulse, Plane, MoreHorizontal,
+  Briefcase, Store, TrendingUp, Laptop, Gift, CircleDollarSign,
 } from "lucide-react";
 import { categoryById } from "../data/categories";
 
@@ -11,6 +12,7 @@ import { categoryById } from "../data/categories";
 const ICONS = {
   UtensilsCrossed, Bus, ShoppingBag, Popcorn, Receipt,
   GraduationCap, HeartPulse, Plane, MoreHorizontal,
+  Briefcase, Store, TrendingUp, Laptop, Gift, CircleDollarSign,
 };
 
 export default function CategoryIcon({ categoryId, size = 16, withBg = false }) {

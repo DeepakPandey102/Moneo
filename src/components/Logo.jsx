@@ -1,24 +1,35 @@
 import React, { useId } from "react";
 
-// The Moneo "M" mark with the cyan → blue → purple brand gradient.
-export default function Logo({ size = 30, withText = true, textSize = 22 }) {
+// Moneo mark: a rounded lowercase "m" in the blue → violet gradient,
+// followed by the lowercase "moneo" wordmark.
+export function LogoMark({ size = 30 }) {
   const id = useId().replace(/:/g, "");
   return (
+    <svg width={size} height={size * 0.8} viewBox="0 0 40 32" aria-hidden="true">
+      <defs>
+        <linearGradient id={`lm${id}`} x1="0" y1="0" x2="1" y2="0.4">
+          <stop offset="0" stopColor="#5B6CFF" />
+          <stop offset="0.55" stopColor="#7C5CFF" />
+          <stop offset="1" stopColor="#B26BFF" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M5 28V13.5a8.5 8.5 0 0 1 15 0V28M20 13.5a8.5 8.5 0 0 1 15 0V28"
+        fill="none"
+        stroke={`url(#lm${id})`}
+        strokeWidth="7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export default function Logo({ size = 30, withText = true, textSize = 22 }) {
+  return (
     <span className="mo-logo" style={{ fontSize: textSize }}>
-      <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
-        <defs>
-          <linearGradient id={`g${id}`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#22D3EE" />
-            <stop offset="0.5" stopColor="#4F7BFF" />
-            <stop offset="1" stopColor="#A855F7" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M4 26V7.5c0-1.3 1.6-1.9 2.5-1L16 16l9.5-9.5c.9-.9 2.5-.3 2.5 1V26a2 2 0 0 1-2 2h-2.5a2 2 0 0 1-2-2V15.5L17.4 19.6a2 2 0 0 1-2.8 0L10.5 15.5V26a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"
-          fill={`url(#g${id})`}
-        />
-      </svg>
-      {withText && <span className="mo-logo-text">Moneo</span>}
+      <LogoMark size={size * 1.15} />
+      {withText && <span className="mo-logo-text">moneo</span>}
     </span>
   );
 }
