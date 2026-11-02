@@ -226,7 +226,7 @@ function localInsight(data, lang) {
 
 // ---------- Shared: financial context sent to the backend ----------
 
-function buildFinancialContext(data) {
+export function buildFinancialContext(data) {
   const { transactions, budgets, goals } = data;
   const catSpend = spendingByCategory(transactions);
   const top = topCategory(transactions);

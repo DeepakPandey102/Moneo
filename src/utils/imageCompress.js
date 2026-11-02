@@ -50,3 +50,23 @@ export async function compressImage(file) {
     return file;
   }
 }
+
+// AI-generated images arrive as large PNGs (often 1–2 MB). Before saving one
+// in a chat, shrink it to a JPEG of at most `maxSide` px (~150–300 KB), so
+// chats stay quick to load. Returns a data URL; the original on failure.
+export async function shrinkDataUrl(dataUrl, maxSide = 1024, quality = 0.86) {
+  try {
+    const img = new Image();
+    img.src = dataUrl;
+    await img.decode();
+    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+    const out = canvas.toDataURL("image/jpeg", quality);
+    return out.length < dataUrl.length ? out : dataUrl;
+  } catch {
+    return dataUrl;
+  }
+}

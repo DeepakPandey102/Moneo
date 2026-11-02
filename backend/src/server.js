@@ -31,7 +31,8 @@ app.use(cors({
     return cb(null, false);
   },
 }));
-app.use(express.json({ limit: "1mb" }));
+// 8mb: chat requests can carry a reference image to edit (sent compressed).
+app.use(express.json({ limit: "8mb" }));
 
 // Tiny in-memory rate limit so a runaway loop (or someone else) can't burn
 // through the Gemini quota. 30 AI requests per minute per IP.

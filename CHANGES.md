@@ -1,3 +1,10 @@
+## Smarter AI, images, category details (November 2026)
+
+- **Ask Anything answers anything.** The Home panel used the finance-only assistant, which refused general questions (e.g. "what's today's date?"). Both the Home panel and the Ask Anything page now use the general assistant: today's date (Korea time) in its instructions, live Google Search, reasoning turned on for accuracy (GEMINI_THINKING_BUDGET, default 1024), longer answers, and the user's Moneo data attached for money questions.
+- **Image generation.** "Create an image of …", "draw …", "그려줘", or the **Image** button in the composer makes an image with Gemini's image model (GEMINI_IMAGE_MODEL, default gemini-2.5-flash-image). Follow-ups like "make it blue" edit the last image. Images are shrunk to JPEG before saving and have a Download button.
+- **Analytics drill-down.** Tap a category (chart slice or list row) in Spending by Category to see this month's total, average, largest, top places, a day-by-day chart and every record; receipt records expand to show each item. Dashboard legend items open the same view.
+- Clear error messages for usage limits, blocked images, and keys without image access.
+
 ## New look (November 2026)
 
 - **New design** based on the team mockup: purple theme across the app, new rounded "m" logo and lowercase wordmark (also the browser icon), solid sidebar icons, glowing active item, Budgets count badge, and the profile chip at the bottom of the sidebar.

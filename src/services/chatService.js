@@ -5,6 +5,7 @@
 // the browser.
 
 import { supabase } from "../utils/supabaseClient";
+import { shrinkDataUrl } from "../utils/imageCompress";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -16,6 +17,31 @@ const RECENT_WINDOW = 12;
 // Once a thread crosses this many total messages since the last summary,
 // fold the older ones into memory_summary.
 const SUMMARIZE_EVERY = 16;
+
+// Images are saved inside messages as Markdown: ![alt](data:image/jpeg;base64,…)
+const IMAGE_MD = /!\[[^\]]*\]\((data:image\/[^)]+)\)/g;
+
+// The AI only needs to know an image was there, not its bytes.
+export function withoutImages(text) {
+  return String(text || "").replace(IMAGE_MD, "[image]");
+}
+
+// The most recent image in a thread (for "make it blue" style edits).
+function lastImageIn(messages) {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = [...String(messages[i].content || "").matchAll(IMAGE_MD)];
+    if (m.length) return m[m.length - 1][1];
+  }
+  return null;
+}
+
+// Turns the backend's { reply, image } into the Markdown we save and show.
+export async function replyToMarkdown({ reply, image }, lang) {
+  if (!image?.data) return reply;
+  const dataUrl = await shrinkDataUrl(`data:${image.mimeType || "image/png"};base64,${image.data}`);
+  const alt = lang === "ko" ? "AI가 만든 이미지" : "AI-generated image";
+  return `${reply || ""}\n\n![${alt}](${dataUrl})`.trim();
+}
 
 // ---------- Threads ----------
 
@@ -132,13 +158,22 @@ export function friendlyChatError(err, lang) {
   if (err.code === "rate_limited") {
     return lang === "ko" ? "요청이 너무 많아요. 1분 후 다시 시도해주세요." : "Too many requests — please try again in a minute.";
   }
+  if (err.code === "quota_exceeded") {
+    return lang === "ko" ? "AI 사용 한도에 도달했어요. 서버의 Gemini API 키(요금제)를 확인해주세요." : "The AI usage limit was reached. Check the Gemini API key / plan on the server.";
+  }
+  if (err.code === "image_blocked") {
+    return lang === "ko" ? "이 요청으로는 이미지를 만들 수 없었어요. 다르게 설명해 보세요." : "That image couldn't be created. Try describing it differently.";
+  }
+  if (err.code === "image_unavailable") {
+    return lang === "ko" ? "이 API 키로는 이미지 생성을 사용할 수 없어요." : "Image generation isn't available with this API key.";
+  }
   return lang === "ko" ? "메시지를 보내지 못했어요. 다시 시도해주세요." : "Couldn't send that message. Please try again.";
 }
 
 // The main entry point: send a user message in a thread, get the AI's
 // reply, persist both, and transparently handle memory summarization
 // when the thread has grown long enough to need it.
-export async function sendMessage({ threadId, message, lang, skipUserSave = false }) {
+export async function sendMessage({ threadId, message, lang, skipUserSave = false, mode = "auto", financialContext = null }) {
   if (!skipUserSave) {
     await saveMessage(threadId, "user", message);
   }
@@ -153,16 +188,19 @@ export async function sendMessage({ threadId, message, lang, skipUserSave = fals
   const history = allMessages.slice();
   const last = history[history.length - 1];
   if (last && last.role === "user" && last.content === message) history.pop();
-  const recent = history.slice(-RECENT_WINDOW).map((m) => ({ role: m.role, content: m.content }));
+  const recent = history.slice(-RECENT_WINDOW).map((m) => ({ role: m.role, content: withoutImages(m.content) }));
 
-  const { reply } = await postToBackend("/api/chat/reply", {
+  const result = await postToBackend("/api/chat/reply", {
     message,
     recentMessages: recent,
     memorySummary,
     language: lang,
+    mode,
+    financialContext,
+    referenceImage: lastImageIn(history),
   });
 
-  const saved = await saveMessage(threadId, "assistant", reply);
+  const saved = await saveMessage(threadId, "assistant", await replyToMarkdown(result, lang));
 
   // Fire-and-forget memory compression once the thread is long enough —
   // doesn't block the reply the user is waiting for.
@@ -195,7 +233,7 @@ async function maybeSummarize(threadId, lang) {
     if (toFold.length === 0) return;
 
     const { summary } = await postToBackend("/api/chat/summarize", {
-      messagesToSummarize: toFold.map((m) => ({ role: m.role, content: m.content })),
+      messagesToSummarize: toFold.map((m) => ({ role: m.role, content: withoutImages(m.content) })),
       previousSummary,
       language: lang,
     });
@@ -203,6 +241,19 @@ async function maybeSummarize(threadId, lang) {
   } finally {
     summarizingThreads.delete(threadId);
   }
+}
+
+// The Home panel's quick chat: same AI, not saved as a thread.
+export async function quickAsk({ message, history = [], lang, financialContext = null }) {
+  const result = await postToBackend("/api/chat/reply", {
+    message,
+    recentMessages: history.slice(-8).map((m) => ({ role: m.role, content: withoutImages(m.content) })),
+    memorySummary: "",
+    language: lang,
+    financialContext,
+    referenceImage: lastImageIn(history),
+  });
+  return replyToMarkdown(result, lang);
 }
 
 export async function generateTitleForThread({ threadId, firstMessage, lang }) {

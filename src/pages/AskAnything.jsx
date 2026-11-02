@@ -1,14 +1,32 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github-dark.css";
 import {
   Plus, ArrowUp, Trash2, Pencil, Check, X, Copy, RotateCcw, AlertCircle,
-  PanelLeft, Search, ArrowDown, Lightbulb, PenLine, Languages, CalendarDays, MessageSquare,
+  PanelLeft, Search, ArrowDown, Lightbulb, PenLine, Languages, MessageSquare, ImagePlus, Download,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import * as chatService from "../services/chatService";
+import { buildFinancialContext } from "../services/assistantService";
+
+// Same idea as the server's check: does this message ask for a picture?
+const IMAGE_ASK = /\b(draw|sketch|paint|illustrate)\b|\b(generate|create|make|design|render|show me|give me)\b[^.?!\n]{0,60}\b(image|picture|pic|photo|illustration|drawing|logo|poster|wallpaper|artwork|icon|banner|cartoon|portrait|avatar)s?\b|그려\s*(줘|주세요)|(그림|이미지|사진|일러스트|로고|포스터).{0,15}(만들어|생성|그려|줘)/i;
+
+// Markdown normally blocks data: links; allow inline images only.
+const allowImages = (url) => (/^data:image\//.test(url) ? url : defaultUrlTransform(url));
+
+function ChatImage({ src, alt }) {
+  return (
+    <figure className="aa-img">
+      <img src={src} alt={alt || ""} loading="lazy" />
+      {String(src || "").startsWith("data:image/") && (
+        <a className="aa-img-dl" href={src} download="moneo-image.jpg"><Download size={14} /> Download</a>
+      )}
+    </figure>
+  );
+}
 
 // Suggestions shown on an empty chat. Picked for students living in Korea.
 const STARTERS = {
@@ -16,13 +34,13 @@ const STARTERS = {
     { icon: Lightbulb, title: "Explain it simply", prompt: "Explain compound interest simply, with a small example in won." },
     { icon: PenLine, title: "Write an email", prompt: "Help me write a short, polite email to my professor asking for a deadline extension." },
     { icon: Languages, title: "Polite Korean", prompt: "Translate this into polite Korean for my landlord: \"The heating isn't working. When can someone check it?\"" },
-    { icon: CalendarDays, title: "Plan my week", prompt: "Make a simple study plan for this week: 3 exams, a part-time job on weekends." },
+    { icon: ImagePlus, title: "Create an image", prompt: "Create an image of a cozy Korean street food stall at night with warm lights, illustration style." },
   ],
   ko: [
     { icon: Lightbulb, title: "쉽게 설명하기", prompt: "복리를 원화 예시로 쉽게 설명해줘." },
     { icon: PenLine, title: "이메일 쓰기", prompt: "교수님께 과제 마감 연장을 정중하게 부탁하는 짧은 이메일을 써줘." },
     { icon: Languages, title: "존댓말로 바꾸기", prompt: "집주인에게 보낼 메시지를 정중한 한국어로 바꿔줘: \"난방이 안 돼요. 언제 확인해 주실 수 있나요?\"" },
-    { icon: CalendarDays, title: "일주일 계획", prompt: "이번 주 공부 계획을 세워줘: 시험 3개, 주말에는 아르바이트." },
+    { icon: ImagePlus, title: "이미지 만들기", prompt: "따뜻한 조명이 있는 밤의 한국 포장마차 일러스트 이미지를 만들어줘." },
   ],
 };
 
@@ -79,7 +97,7 @@ function CodeBlock({ children, lang }) {
 }
 
 export default function AskAnything() {
-  const { user, lang } = useApp();
+  const { user, lang, data } = useApp();
   const ko = lang === "ko";
   const L = (en, k) => (ko ? k : en);
 
@@ -100,6 +118,8 @@ export default function AskAnything() {
   const [showJump, setShowJump] = useState(false);
   const [typewriterId, setTypewriterId] = useState(null);
   const [typewriterText, setTypewriterText] = useState("");
+  const [imageMode, setImageMode] = useState(false);
+  const [makingImage, setMakingImage] = useState(false);
 
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
@@ -165,6 +185,7 @@ export default function AskAnything() {
   }, [input]);
 
   function runTypewriter(messageId, fullText) {
+    if (String(fullText).includes("data:image/")) return; // images appear at once
     setTypewriterId(messageId);
     setTypewriterText("");
     let i = 0;
@@ -205,6 +226,9 @@ export default function AskAnything() {
     setError(null);
     if (!isRetry) setInput("");
     setSending(true);
+    const mode = imageMode ? "image" : "auto";
+    setMakingImage(imageMode || IMAGE_ASK.test(text));
+    setImageMode(false);
     stickToBottomRef.current = true;
 
     const tempUserMsg = { id: "temp-" + Date.now(), role: "user", content: text, created_at: new Date().toISOString() };
@@ -215,7 +239,7 @@ export default function AskAnything() {
       threadId = await ensureThread();
       if (!isRetry) setMessages((prev) => [...prev, tempUserMsg]);
 
-      const reply = await chatService.sendMessage({ threadId, message: text, lang, skipUserSave: isRetry });
+      const reply = await chatService.sendMessage({ threadId, message: text, lang, skipUserSave: isRetry, mode, financialContext: data ? buildFinancialContext(data) : null });
       const fresh = await chatService.listMessages(threadId);
       if (activeThreadRef.current === threadId) {
         setMessages(fresh);
@@ -265,7 +289,8 @@ export default function AskAnything() {
     try {
       await chatService.deleteMessage(msg.id);
       setMessages((prev) => prev.filter((m) => m.id !== msg.id));
-      const reply = await chatService.sendMessage({ threadId: activeThreadId, message: userMsg.content, lang, skipUserSave: true });
+      setMakingImage(IMAGE_ASK.test(userMsg.content));
+      const reply = await chatService.sendMessage({ threadId: activeThreadId, message: userMsg.content, lang, skipUserSave: true, financialContext: data ? buildFinancialContext(data) : null });
       const fresh = await chatService.listMessages(activeThreadId);
       setMessages(fresh);
       runTypewriter(reply.id, reply.content);
@@ -320,7 +345,10 @@ export default function AskAnything() {
   }, [threads, query]);
   const groups = useMemo(() => groupThreads(filtered, lang), [filtered, lang]);
   const empty = messages.length === 0 && !loadingMessages;
-  const mdComponents = useMemo(() => ({ pre: ({ children }) => <CodeBlock lang={lang}>{children}</CodeBlock> }), [lang]);
+  const mdComponents = useMemo(() => ({
+    pre: ({ children }) => <CodeBlock lang={lang}>{children}</CodeBlock>,
+    img: ({ src, alt }) => <ChatImage src={src} alt={alt} />,
+  }), [lang]);
 
   return (
     <div className={"aa-page" + (drawerOpen ? " drawer-open" : "")}>
@@ -444,7 +472,7 @@ export default function AskAnything() {
                     <div className="aa-ai-body">
                       <div className="aa-ai-name">Moneo</div>
                       <div className="aa-md">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]} components={mdComponents}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]} components={mdComponents} urlTransform={allowImages}>
                           {msg.id === typewriterId ? typewriterText : msg.content}
                         </ReactMarkdown>
                       </div>
@@ -468,7 +496,7 @@ export default function AskAnything() {
                   <span className="aa-mark thinking" aria-hidden="true" />
                   <div className="aa-ai-body">
                     <div className="aa-ai-name">Moneo</div>
-                    <div className="aa-thinking">{L("Thinking", "생각하는 중")}<span className="aa-dots"><i /><i /><i /></span></div>
+                    <div className="aa-thinking">{makingImage ? L("Creating your image", "이미지를 만드는 중") : L("Thinking", "생각하는 중")}<span className="aa-dots"><i /><i /><i /></span></div>
                   </div>
                 </div>
               )}
@@ -494,14 +522,23 @@ export default function AskAnything() {
         )}
 
         <div className="aa-composer-wrap">
-          <form className="aa-composer" data-tour="ask-composer" onSubmit={(e) => { e.preventDefault(); handleSend(); }}>
+          <form className={"aa-composer" + (imageMode ? " image-mode" : "")} data-tour="ask-composer" onSubmit={(e) => { e.preventDefault(); handleSend(); }}>
+            <button
+              type="button"
+              className={"aa-mode" + (imageMode ? " on" : "")}
+              onClick={() => { setImageMode((v) => !v); inputRef.current?.focus(); }}
+              aria-pressed={imageMode}
+              title={L("Create an image", "이미지 만들기")}
+            >
+              <ImagePlus size={17} /><span>{L("Image", "이미지")}</span>
+            </button>
             <textarea
               ref={inputRef}
               rows={1}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onComposerKey}
-              placeholder={L("Message Moneo…", "Moneo에게 메시지 보내기…")}
+              placeholder={imageMode ? L("Describe the image you want…", "만들고 싶은 이미지를 설명해 주세요…") : L("Ask anything…", "무엇이든 물어보세요…")}
               aria-label={L("Message", "메시지")}
             />
             <button type="submit" className="aa-send" disabled={sending || !input.trim()} aria-label={L("Send", "보내기")}>

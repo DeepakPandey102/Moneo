@@ -8,7 +8,10 @@ import {
 import { useApp } from "../context/AppContext";
 import CategoryIcon from "../components/CategoryIcon";
 import { categoryById, categoryLabel } from "../data/categories";
-import { getAssistantResponse } from "../services/assistantService";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { buildFinancialContext } from "../services/assistantService";
+import { quickAsk, friendlyChatError } from "../services/chatService";
 import { savingStreak, currency } from "../utils/calculations";
 import { parseLocalDate, todayLocal } from "../utils/dates";
 import { SparkleIcon } from "../components/icons/FilledIcons";
@@ -146,7 +149,7 @@ function relativeDay(dateStr, lang) {
 
 // ---------- page ----------
 export default function Dashboard() {
-  const { data, lang, t, user, assistantMode, unlockAchievement } = useApp();
+  const { data, lang, t, user, unlockAchievement } = useApp();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const ko = lang === "ko";
@@ -238,17 +241,20 @@ export default function Dashboard() {
   const chatBoxRef = useRef(null);
   useEffect(() => { const b = chatBoxRef.current; if (b) b.scrollTo({ top: b.scrollHeight, behavior: "smooth" }); }, [chat, thinking]);
 
+  // Same general AI as the Ask Anything page (any question, live search,
+  // images), with the user's Moneo data attached for money questions.
   async function ask(question) {
     const q = (question ?? chatInput).trim();
     if (!q || thinking) return;
     setChatInput("");
-    setChat((c) => [...c, { from: "user", text: q }].slice(-8));
+    const history = chat.map((m) => ({ role: m.from === "user" ? "user" : "assistant", content: m.text }));
+    setChat((c) => [...c, { from: "user", text: q }].slice(-10));
     setThinking(true);
     try {
-      const answer = await getAssistantResponse(q, data, lang, assistantMode);
-      setChat((c) => [...c, { from: "ai", text: answer }].slice(-8));
-    } catch {
-      setChat((c) => [...c, { from: "ai", text: L("Something went wrong. Please try again.", "문제가 생겼어요. 다시 시도해주세요.") }]);
+      const answer = await quickAsk({ message: q, history, lang, financialContext: buildFinancialContext(data) });
+      setChat((c) => [...c, { from: "ai", text: answer }].slice(-10));
+    } catch (err) {
+      setChat((c) => [...c, { from: "ai", text: friendlyChatError(err, lang) }]);
     } finally {
       setThinking(false);
     }
@@ -337,7 +343,11 @@ export default function Dashboard() {
               <ul className="db-legend">
                 {overview.parts.length === 0 && <li className="db-muted">{L("No spending yet", "아직 지출이 없어요")}</li>}
                 {overview.parts.map((p) => (
-                  <li key={p.id}><i style={{ background: p.color }} /><span>{p.name}</span><b>{p.pct}%</b></li>
+                  <li key={p.id}>
+                    <button type="button" className="db-legend-btn" disabled={p.id === "_others"} onClick={() => navigate(`/app/analytics?category=${p.id}`)} title={L("See all records", "모든 기록 보기")}>
+                      <i style={{ background: p.color }} /><span>{p.name}</span><b>{p.pct}%</b>
+                    </button>
+                  </li>
                 ))}
               </ul>
             </div>
@@ -431,7 +441,22 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="db-ask-msgs" ref={chatBoxRef}>
-                {chat.map((m, i) => <div key={i} className={"db-msg " + m.from}>{m.text}</div>)}
+                {chat.map((m, i) => (
+                  <div key={i} className={"db-msg " + m.from}>
+                    {m.from === "ai" ? (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        urlTransform={(u) => (/^data:image\//.test(u) ? u : defaultUrlTransform(u))}
+                        components={{
+                          img: ({ src, alt }) => (
+                            <figure className="aa-img"><img src={src} alt={alt || ""} /><a className="aa-img-dl" href={src} download="moneo-image.jpg">{L("Download", "다운로드")}</a></figure>
+                          ),
+                          a: ({ href, children }) => <a href={href} target="_blank" rel="noreferrer">{children}</a>,
+                        }}
+                      >{m.text}</ReactMarkdown>
+                    ) : m.text}
+                  </div>
+                ))}
                 {thinking && <div className="db-msg ai"><span className="db-typing"><i /><i /><i /></span></div>}
               </div>
             )}
