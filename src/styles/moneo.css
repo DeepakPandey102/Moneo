@@ -1897,3 +1897,29 @@ select option:checked { background: #6846F0; color: #FFFFFF; }
 .db-ask-head h3 { white-space: nowrap; font-size: 18px; }
 .db-ask-head { min-width: 0; }
 .db-ask-tools button { width: 30px; height: 30px; }
+
+/* Analytics: each record as its own bar + pie */
+.an-view-tabs { display: inline-flex; gap: 4px; padding: 4px; margin: 2px 0 12px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); }
+.an-view-tabs button { min-height: 34px; padding: 0 14px; border: none; border-radius: 9px; background: none; color: var(--muted); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.an-view-tabs button.on { background: var(--primary); color: #FFFFFF; }
+.an-view-tabs button:focus-visible { outline: 2px solid #B9A5FF; outline-offset: 1px; }
+.an-records-charts { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 18px; align-items: center; margin-bottom: 8px; }
+.an-records-charts .an-detail-chart { height: 220px; margin: 0; }
+.an-record-pie { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.an-pie-box { width: 160px; height: 160px; flex-shrink: 0; }
+.an-pie-legend { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.an-pie-legend li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: 12.5px; color: var(--body); }
+.an-pie-legend li i { width: 10px; height: 10px; border-radius: 50%; }
+.an-pie-legend li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.an-pie-legend li b { color: var(--ink); }
+.an-pie-legend li.more { display: block; color: var(--muted); }
+.an-tip { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 10px; background: #1A1636; border: 1px solid var(--border-strong); box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
+.an-tip b { font-size: 13px; color: #FFFFFF; }
+.an-tip span { font-size: 12px; color: var(--muted); }
+.an-rec-num { display: inline-block; min-width: 30px; font-style: normal; font-weight: 800; color: #B9A5FF; }
+.an-records > li.focus { background: rgba(124,92,255,0.12); box-shadow: inset 3px 0 0 #8B6CFF; }
+.an-record { cursor: pointer; }
+@media (max-width: 900px) {
+  .an-records-charts { grid-template-columns: minmax(0, 1fr); }
+  .an-record-pie { justify-content: center; }
+}

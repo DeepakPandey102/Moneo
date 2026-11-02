@@ -5,7 +5,7 @@ import { X, ChevronRight, ChevronDown, ReceiptText, Pencil } from "lucide-react"
 import CategoryIcon from "../components/CategoryIcon";
 import { parseLocalDate } from "../utils/dates";
 import {
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, LabelList,
   XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend,
 } from "recharts";
 import { useApp } from "../context/AppContext";
@@ -187,6 +187,41 @@ function CategoryDetail({ categoryId, transactions, lang, onClose, onEdit }) {
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const byDay = Array.from({ length: Math.min(daysInMonth, now.getDate()) }, (_, i) => ({ day: i + 1, amount: 0 }));
   list.forEach((tx) => { const d = parseLocalDate(tx.date).getDate(); if (byDay[d - 1]) byDay[d - 1].amount += Number(tx.amount || 0); });
+  // Every record as its own bar / slice, oldest first: #1, #2, #3 …
+  const records = [...list].reverse().map((tx, i) => ({
+    id: tx.id, n: i + 1, label: `#${i + 1}`, amount: Number(tx.amount || 0),
+    name: tx.merchant || categoryLabel(tx.category, lang), date: tx.date,
+  }));
+  const RECORD_COLORS = [cat.color, "#8B5CF6", "#22D3EE", "#F59E0B", "#34D399", "#F472B6", "#60A5FA", "#FB7185", "#A3E635", "#94A3B8"];
+  const slices = (() => {
+    const sorted = [...records].sort((a, b) => b.amount - a.amount);
+    const top = sorted.length > 9 ? sorted.slice(0, 8) : sorted;
+    const rest = sorted.length > 9 ? sorted.slice(8).reduce((s, r) => s + r.amount, 0) : 0;
+    const out = top.map((r) => ({ ...r, key: r.id, color: RECORD_COLORS[(r.n - 1) % RECORD_COLORS.length] }));
+    if (rest) out.push({ key: "_rest", label: ko ? "기타" : "Others", name: ko ? `나머지 ${sorted.length - 8}건` : `${sorted.length - 8} more records`, amount: rest, color: "#64748B" });
+    return out.map((s) => ({ ...s, pct: total ? Math.round((s.amount / total) * 100) : 0 }));
+  })();
+  const [view, setView] = useState("records");
+  const [focusId, setFocusId] = useState(null);
+  const fmtShort = (s) => parseLocalDate(s).toLocaleDateString(ko ? "ko-KR" : "en-US", { month: "short", day: "numeric" });
+  const recordTip = ({ active, payload }) => {
+    if (!active || !payload?.length) return null;
+    const r = payload[0].payload;
+    return (
+      <div className="an-tip">
+        <b>{r.label} · {currency(r.amount, lang)}</b>
+        <span>{r.date ? `${fmtShort(r.date)} · ` : ""}{r.name}</span>
+      </div>
+    );
+  };
+  const pickRecord = (r) => {
+    if (!r?.id) return;
+    setFocusId(r.id);
+    const tx = list.find((x) => x.id === r.id);
+    if (tx && Array.isArray(tx.items) && tx.items.length) setOpenId(r.id);
+    setTimeout(() => document.getElementById(`rec-${r.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+  };
+
   const shops = {};
   list.forEach((tx) => { const k = (tx.merchant || (ko ? "가맹점 없음" : "No merchant")).trim(); shops[k] = (shops[k] || 0) + Number(tx.amount || 0); });
   const topShops = Object.entries(shops).sort((a, b) => b[1] - a[1]).slice(0, 3);
@@ -211,6 +246,47 @@ function CategoryDetail({ categoryId, transactions, lang, onClose, onEdit }) {
         <div><span>{ko ? "자주 간 곳" : "Top places"}</span><b className="an-shops">{topShops.length ? topShops.map(([n]) => n).join(", ") : "—"}</b></div>
       </div>
 
+      <div className="an-view-tabs" role="tablist" aria-label={ko ? "차트 보기" : "Chart view"}>
+        <button type="button" role="tab" aria-selected={view === "records"} className={view === "records" ? "on" : ""} onClick={() => setView("records")}>{ko ? "기록별" : "Each record"}</button>
+        <button type="button" role="tab" aria-selected={view === "days"} className={view === "days" ? "on" : ""} onClick={() => setView("days")}>{ko ? "날짜별" : "By day"}</button>
+      </div>
+
+      {view === "records" ? (
+        <div className="an-records-charts">
+          <div className="an-detail-chart">
+            <ResponsiveContainer>
+              <BarChart data={records} margin={{ top: 26, right: 6, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 11.5, fill: "#B8B1D9" }} interval={0} />
+                <YAxis tick={{ fontSize: 11, fill: "#9590B5" }} width={52} tickFormatter={shortWon} />
+                <Tooltip content={recordTip} cursor={{ fill: "rgba(255,255,255,0.05)" }} />
+                <Bar dataKey="amount" radius={[6, 6, 0, 0]} isAnimationActive={false} onClick={(d) => pickRecord(d?.payload || d)} style={{ cursor: "pointer" }} maxBarSize={56}>
+                  {records.map((r) => <Cell key={r.id} fill={RECORD_COLORS[(r.n - 1) % RECORD_COLORS.length]} opacity={focusId && focusId !== r.id ? 0.45 : 1} />)}
+                  {records.length <= 14 && <LabelList dataKey="amount" position="top" formatter={shortWon} style={{ fill: "#E9E5FF", fontSize: 11, fontWeight: 700 }} />}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="an-record-pie">
+            <div className="an-pie-box">
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie data={slices} dataKey="amount" nameKey="label" innerRadius={44} outerRadius={74} paddingAngle={slices.length > 1 ? 2 : 0} isAnimationActive={false} onClick={(d) => pickRecord(d?.payload || d)} style={{ cursor: "pointer" }}>
+                    {slices.map((s) => <Cell key={s.key} fill={s.color} stroke="none" opacity={focusId && focusId !== s.id ? 0.45 : 1} />)}
+                  </Pie>
+                  <Tooltip content={recordTip} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <ul className="an-pie-legend">
+              {slices.slice(0, 6).map((s) => (
+                <li key={s.key}><i style={{ background: s.color }} /><span>{s.label} · {s.name}</span><b>{s.pct}%</b></li>
+              ))}
+              {slices.length > 6 && <li className="more">{ko ? `외 ${slices.length - 6}개` : `+${slices.length - 6} more`}</li>}
+            </ul>
+          </div>
+        </div>
+      ) : (
       <div className="an-detail-chart">
         <ResponsiveContainer>
           <BarChart data={byDay} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
@@ -222,6 +298,7 @@ function CategoryDetail({ categoryId, transactions, lang, onClose, onEdit }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
+      )}
 
       <h3 className="an-detail-sub">{ko ? "모든 기록" : "All records"}</h3>
       {list.length === 0 ? (
@@ -232,9 +309,9 @@ function CategoryDetail({ categoryId, transactions, lang, onClose, onEdit }) {
             const hasItems = Array.isArray(tx.items) && tx.items.length > 0;
             const open = openId === tx.id;
             return (
-              <li key={tx.id} className={open ? "open" : ""}>
-                <button type="button" className="an-record" onClick={() => hasItems && setOpenId(open ? null : tx.id)} aria-expanded={hasItems ? open : undefined} disabled={!hasItems}>
-                  <span className="an-record-date">{fmtDate(tx.date)}</span>
+              <li key={tx.id} id={`rec-${tx.id}`} className={(open ? "open" : "") + (focusId === tx.id ? " focus" : "")}>
+                <button type="button" className="an-record" onClick={() => { setFocusId(tx.id); if (hasItems) setOpenId(open ? null : tx.id); }} aria-expanded={hasItems ? open : undefined}>
+                  <span className="an-record-date"><em className="an-rec-num">#{records.find((r) => r.id === tx.id)?.n}</em>{fmtDate(tx.date)}</span>
                   <span className="an-record-main">
                     <b>{tx.merchant || categoryLabel(tx.category, lang)}</b>
                     <small>
