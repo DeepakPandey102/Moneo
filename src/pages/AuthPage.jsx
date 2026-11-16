@@ -16,6 +16,17 @@ import heroImage from "../assets/seoul-night.jpg";
 
 // One page for log in, sign up and "forgot password".
 // mode: "login" | "signup" | "forgot"
+// Team photo in a gradient ring; falls back to initials if there is no photo.
+function TeamAvatar({ member, small = false }) {
+  return (
+    <div className={"mo-team-avatar" + (small ? " sm" : "") + (member.photo ? " has-photo" : "")}>
+      {member.photo
+        ? <img src={member.photo} alt={member.name} loading="lazy" width={small ? 54 : 132} height={small ? 54 : 132} />
+        : <span>{member.initials}</span>}
+    </div>
+  );
+}
+
 export default function AuthPage({ initialMode = "login" }) {
   const { login, register, requestPasswordReset, t, lang, setLanguage } = useApp();
   const navigate = useNavigate();
@@ -412,7 +423,7 @@ export default function AuthPage({ initialMode = "login" }) {
           <div className="mo-team">
             {TEAM.map((m, i) => (
               <motion.article key={m.id} className="mo-team-card" {...reveal(i)}>
-                <div className="mo-team-avatar"><span>{m.initials}</span></div>
+                <TeamAvatar member={m} />
                 <h3>{m.name}</h3>
                 <span className="mo-team-role">{m.role[lang] || m.role.en}</span>
                 <p>{m.bio[lang] || m.bio.en}</p>
@@ -454,7 +465,7 @@ export default function AuthPage({ initialMode = "login" }) {
           {TEAM.map((m, i) => (
             <motion.div key={m.id} className="mo-contact-card" {...reveal(i)}>
               <div className="mo-contact-head">
-                <div className="mo-team-avatar sm"><span>{m.initials}</span></div>
+                <TeamAvatar member={m} small />
                 <div>
                   <h3>{m.name}</h3>
                   <span className="mo-team-role">{m.role[lang] || m.role.en}</span>

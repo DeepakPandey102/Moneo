@@ -2,12 +2,18 @@
 // sections lives here, so the team can update it without touching layout code.
 //
 // To add or change a link, edit the fields below. Empty strings are hidden.
+// Photos live in src/assets/team/ (square images; they are shown as circles).
+
+import deepakPhoto from "../assets/team/deepak.jpg";
+import renukaPhoto from "../assets/team/renuka.jpg";
+import rohitPhoto from "../assets/team/rohit.jpg";
 
 export const TEAM = [
   {
     id: "deepak",
     name: "Deepak Pandey",
     initials: "DP",
+    photo: deepakPhoto,
     role: { en: "Project Lead · Full-Stack & AI", ko: "프로젝트 리더 · 풀스택 & AI" },
     bio: {
       en: "Leads the project and builds the core of Moneo: the backend server, the Gemini AI integration for receipt scanning and the assistant, and the secure Supabase database.",
@@ -22,6 +28,7 @@ export const TEAM = [
     id: "renuka",
     name: "Renuka Thapa Magar",
     initials: "RT",
+    photo: renukaPhoto,
     role: { en: "UI/UX Designer", ko: "UI/UX 디자이너" },
     bio: {
       en: "Designs how Moneo looks and feels — the visual identity, the landing page and the dashboard — so managing money feels clear and calm instead of stressful.",
@@ -36,6 +43,7 @@ export const TEAM = [
     id: "rohit",
     name: "Rohit Rawal",
     initials: "RR",
+    photo: rohitPhoto,
     role: { en: "Frontend & Quality Assurance", ko: "프론트엔드 & 품질 관리" },
     bio: {
       en: "Builds and polishes app screens and tests every flow — sign-up, receipts, budgets and goals — to make sure Moneo works reliably on phones and laptops.",

@@ -1923,3 +1923,12 @@ select option:checked { background: #6846F0; color: #FFFFFF; }
   .an-records-charts { grid-template-columns: minmax(0, 1fr); }
   .an-record-pie { justify-content: center; }
 }
+
+/* Team photos (About us + Contact us) */
+.mo-team-card { align-items: center; text-align: center; }
+.mo-team-avatar.has-photo { width: 132px; height: 132px; padding: 4px; margin-bottom: 12px; box-shadow: 0 14px 34px rgba(124,92,255,0.35); }
+.mo-team-avatar.has-photo.sm { width: 58px; height: 58px; padding: 3px; margin: 0; box-shadow: 0 6px 16px rgba(124,92,255,0.3); }
+.mo-team-avatar img { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; object-position: center 30%; border: 3px solid #0B0A19; background: #1A1636; }
+.mo-team-avatar.sm img { border-width: 2px; }
+.mo-team-card:hover .mo-team-avatar.has-photo { transform: translateY(-3px) scale(1.03); transition: transform .25s ease; }
+@media (prefers-reduced-motion: reduce) { .mo-team-card:hover .mo-team-avatar.has-photo { transform: none; } }
