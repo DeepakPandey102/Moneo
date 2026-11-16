@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Globe, Bot, User, RotateCcw, Trash2, Info, Trophy, Wand2, RefreshCw, Server, LogOut, Compass } from "lucide-react";
+import { Globe, Bot, User, RotateCcw, Trash2, Info, Trophy, Wand2, RefreshCw, Server, LogOut, Compass, Palette, Check } from "lucide-react";
+import { SKINS, getSkin, setSkin } from "../utils/theme";
 import { START_TOUR_EVENT } from "../components/CoachTour";
 import { useApp } from "../context/AppContext";
 import AchievementCard, { ACHIEVEMENT_DEFS } from "../components/AchievementCard";
@@ -26,6 +27,14 @@ export default function Settings() {
   useEffect(() => { checkStatus(); }, [checkStatus]);
 
   const [working, setWorking] = useState(false);
+  const [skin, setSkinState] = useState(getSkin);
+  function pickSkin(id, e) {
+    if (id === skin) return;
+    setSkinState(id);
+    setSkin(id, e && e.clientX ? { x: e.clientX, y: e.clientY } : null);
+    const s = SKINS.find((k) => k.id === id);
+    showToast(lang === "ko" ? `테마: ${s.ko}` : `Theme: ${s.en}`);
+  }
 
   // Waits for the save to actually finish before saying it worked (before,
   // "Sample month generated" showed instantly, even if it then failed).
@@ -47,6 +56,36 @@ export default function Settings() {
   return (
     <div className="page">
       <div className="page-header"><h1>{t("settings")}</h1></div>
+
+      <div className="card">
+        <div className="card-title-row"><span className="card-title"><Palette size={15} style={{ marginRight: 6, verticalAlign: -2 }} />{lang === "ko" ? "테마" : "Theme"}</span></div>
+        <p className="arch-note" style={{ marginBottom: 14 }}>
+          {lang === "ko" ? "앱 전체의 디자인을 골라보세요. 이 기기에 저장돼요." : "Choose how the whole app looks. Saved on this device."}
+        </p>
+        <div className="skin-grid" role="group" aria-label={lang === "ko" ? "테마 선택" : "Choose a theme"}>
+          {SKINS.map((s) => (
+            <button key={s.id} type="button" className="skin-card" aria-pressed={skin === s.id} onClick={(e) => pickSkin(s.id, e)}>
+              <span className="skin-preview" style={{ background: s.colors[0] }} aria-hidden="true">
+                <span className="sp-side" style={{ background: s.dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)" }}>
+                  <i style={{ background: `linear-gradient(90deg, ${s.colors[1]}, ${s.colors[2]})` }} />
+                  <i style={{ background: s.dark ? "#FFFFFF" : "#16161A" }} />
+                  <i style={{ background: s.dark ? "#FFFFFF" : "#16161A" }} />
+                  <i style={{ background: s.dark ? "#FFFFFF" : "#16161A" }} />
+                </span>
+                <span className="sp-main">
+                  <b style={{ background: s.dark ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.75)" }} />
+                  <span className="sp-row">
+                    <span style={{ background: s.dark ? "rgba(255,255,255,0.08)" : "#FFFFFF", border: s.dark ? "none" : "1px solid rgba(0,0,0,0.08)" }} />
+                    <span style={{ background: `linear-gradient(160deg, ${s.colors[1]}, ${s.colors[2]})` }} />
+                  </span>
+                </span>
+              </span>
+              <span className="skin-name"><b>{lang === "ko" ? s.ko : s.en}</b><small>{lang === "ko" ? s.noteKo : s.noteEn}</small></span>
+              <span className="skin-check" aria-hidden="true"><Check size={14} strokeWidth={3} /></span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="card">
         <div className="card-title-row"><span className="card-title"><User size={15} style={{ marginRight: 6, verticalAlign: -2 }} />{t("profile")}</span></div>

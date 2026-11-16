@@ -66,8 +66,8 @@ body {
 
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 20px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+::-webkit-scrollbar-thumb { background: rgba(var(--t-ink-rgb, 255,255,255),0.12); border-radius: 20px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(var(--t-ink-rgb, 255,255,255),0.2); }
 
 button, input, select, textarea { font-family: inherit; }
 
@@ -77,7 +77,7 @@ button, input, select, textarea { font-family: inherit; }
               box-shadow .2s ease, transform .12s ease;
 }
 
-.card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-card), 0 0 0 1px rgba(255,255,255,0.02); transform: translateY(-1px); }
+.card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-card), 0 0 0 1px rgba(var(--t-ink-rgb, 255,255,255),0.02); transform: translateY(-1px); }
 
 .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(52,211,153,0.35); }
 .btn-primary:active { transform: translateY(0) scale(0.98); }
@@ -145,7 +145,7 @@ button, input, select, textarea { font-family: inherit; }
   padding: 11px 12px 11px 36px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.02);
+  background: rgba(var(--t-ink-rgb, 255,255,255),0.02);
   color: var(--ink);
   font-size: 13.5px;
   outline: none;
@@ -189,7 +189,7 @@ button, input, select, textarea { font-family: inherit; }
   padding: 14px;
   border-radius: 14px;
   border: 1.5px solid var(--border);
-  background: rgba(255,255,255,0.02);
+  background: rgba(var(--t-ink-rgb, 255,255,255),0.02);
   cursor: pointer;
   margin-top: 12px;
 }
@@ -200,7 +200,7 @@ button, input, select, textarea { font-family: inherit; }
   flex-shrink: 0;
 }
 .start-choice-icon-blue { background: rgba(129,140,248,0.16); }
-.start-choice-icon-gray { background: rgba(255,255,255,0.05); }
+.start-choice-icon-gray { background: rgba(var(--t-ink-rgb, 255,255,255),0.05); }
 .start-choice-title { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 3px; }
 .start-choice-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
 
@@ -226,7 +226,7 @@ button, input, select, textarea { font-family: inherit; }
 
 .btn-secondary {
   background: rgba(129,140,248,0.14);
-  color: #A5B4FC;
+  color: var(--t-soft, #A5B4FC);
   border: 1px solid rgba(129,140,248,0.2);
   border-radius: var(--radius-sm);
   padding: 10px 16px;
@@ -288,7 +288,7 @@ button, input, select, textarea { font-family: inherit; }
 
 .sidebar {
   width: 236px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.01));
+  background: linear-gradient(180deg, rgba(var(--t-ink-rgb, 255,255,255),0.025), rgba(var(--t-ink-rgb, 255,255,255),0.01));
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -331,7 +331,7 @@ button, input, select, textarea { font-family: inherit; }
   font-weight: 500;
   transition: background .12s, color .12s;
 }
-.sidebar-link:hover { background: rgba(255,255,255,0.05); color: var(--ink); }
+.sidebar-link:hover { background: rgba(var(--t-ink-rgb, 255,255,255),0.05); color: var(--ink); }
 .sidebar-link.active {
   background: rgba(52,211,153,0.12);
   color: var(--primary);
@@ -507,7 +507,7 @@ button, input, select, textarea { font-family: inherit; }
 
 .mode-badge {
   background: rgba(129,140,248,0.14);
-  color: #A5B4FC;
+  color: var(--t-soft, #A5B4FC);
   font-size: 11.5px;
   font-weight: 700;
   padding: 5px 10px;
@@ -530,7 +530,7 @@ button, input, select, textarea { font-family: inherit; }
 .skeleton-line {
   height: 12px;
   border-radius: 6px;
-  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background: linear-gradient(90deg, rgba(var(--t-ink-rgb, 255,255,255),0.05) 25%, rgba(var(--t-ink-rgb, 255,255,255),0.1) 50%, rgba(var(--t-ink-rgb, 255,255,255),0.05) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
 }
@@ -664,7 +664,7 @@ button, input, select, textarea { font-family: inherit; }
   background: none; border: none; cursor: pointer;
   color: var(--muted); padding: 6px; border-radius: 8px;
 }
-.tx-actions button:hover { background: rgba(255,255,255,0.06); color: var(--ink); }
+.tx-actions button:hover { background: rgba(var(--t-ink-rgb, 255,255,255),0.06); color: var(--ink); }
 
 .insight-card { background: var(--gradient-brand-soft); }
 .insight-text { font-size: 13px; color: var(--body); line-height: 1.6; margin: 0; }
@@ -684,7 +684,7 @@ button, input, select, textarea { font-family: inherit; }
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255,255,255,0.02);
+  background: rgba(var(--t-ink-rgb, 255,255,255),0.02);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 9px 12px;
@@ -697,7 +697,7 @@ button, input, select, textarea { font-family: inherit; }
   border-radius: 10px;
   border: 1px solid var(--border);
   font-size: 13px;
-  background: rgba(255,255,255,0.02);
+  background: rgba(var(--t-ink-rgb, 255,255,255),0.02);
   color: var(--body);
 }
 
@@ -740,7 +740,7 @@ button, input, select, textarea { font-family: inherit; }
   padding: 10px 11px;
   border-radius: 9px;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.02);
+  background: rgba(var(--t-ink-rgb, 255,255,255),0.02);
   color: var(--ink);
   font-size: 13.5px;
   outline: none;
@@ -753,7 +753,7 @@ button, input, select, textarea { font-family: inherit; }
   padding: 9px;
   border-radius: 9px;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.02);
+  background: rgba(var(--t-ink-rgb, 255,255,255),0.02);
   font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
@@ -761,14 +761,14 @@ button, input, select, textarea { font-family: inherit; }
 }
 .pill.active-red { border-color: var(--red); background: rgba(248,113,113,0.14); color: var(--red); }
 .pill.active-green { border-color: var(--green); background: rgba(52,211,153,0.14); color: var(--green); }
-.pill.active-blue { border-color: var(--info); background: rgba(129,140,248,0.14); color: #A5B4FC; }
+.pill.active-blue { border-color: var(--info); background: rgba(129,140,248,0.14); color: var(--t-soft, #A5B4FC); }
 
 .ai-badge {
   display: inline-flex;
   align-items: center;
   gap: 3px;
   background: rgba(129,140,248,0.14);
-  color: #A5B4FC;
+  color: var(--t-soft, #A5B4FC);
   font-size: 9.5px;
   font-weight: 700;
   padding: 2px 7px;
@@ -807,7 +807,7 @@ button, input, select, textarea { font-family: inherit; }
 }
 .receipt-summary-row b { color: var(--ink); font-weight: 700; text-align: right; }
 
-.receipt-items { margin-top: 12px; background: rgba(255,255,255,0.03); border-radius: 10px; padding: 10px 12px; }
+.receipt-items { margin-top: 12px; background: rgba(var(--t-ink-rgb, 255,255,255),0.03); border-radius: 10px; padding: 10px 12px; }
 .receipt-items-title { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
 .receipt-item-row { display: flex; justify-content: space-between; font-size: 12.5px; padding: 4px 0; color: var(--body); }
 
@@ -851,7 +851,7 @@ button, input, select, textarea { font-family: inherit; }
 .budget-card-sub { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
 .budget-card-footer { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); margin-top: 8px; }
 .icon-btn-ghost { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px; border-radius: 6px; }
-.icon-btn-ghost:hover { background: rgba(255,255,255,0.06); color: var(--ink); }
+.icon-btn-ghost:hover { background: rgba(var(--t-ink-rgb, 255,255,255),0.06); color: var(--ink); }
 
 .budget-alert {
   margin-top: 10px;
@@ -876,7 +876,7 @@ button, input, select, textarea { font-family: inherit; }
 .note-input {
   width: 100%;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.02);
+  background: rgba(var(--t-ink-rgb, 255,255,255),0.02);
   color: var(--ink);
   border-radius: 10px;
   padding: 10px 12px;
@@ -899,7 +899,7 @@ button, input, select, textarea { font-family: inherit; }
 .note-text { font-size: 13px; line-height: 1.6; color: var(--body); margin: 0; }
 .note-actions { display: flex; gap: 6px; margin-top: 10px; }
 .note-actions button { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px; border-radius: 6px; }
-.note-actions button:hover { background: rgba(255,255,255,0.06); color: var(--ink); }
+.note-actions button:hover { background: rgba(var(--t-ink-rgb, 255,255,255),0.06); color: var(--ink); }
 
 /* ---------- Assistant chat ---------- */
 
@@ -920,7 +920,7 @@ button, input, select, textarea { font-family: inherit; }
   font-size: 13.5px;
   line-height: 1.5;
 }
-.chat-bubble-ai { background: rgba(255,255,255,0.05); color: var(--ink); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+.chat-bubble-ai { background: rgba(var(--t-ink-rgb, 255,255,255),0.05); color: var(--ink); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
 .chat-bubble-user { background: var(--gradient-brand); color: var(--primary-ink); border-bottom-right-radius: 4px; }
 
 .typing-dots { display: flex; gap: 4px; padding: 13px; }
@@ -934,7 +934,7 @@ button, input, select, textarea { font-family: inherit; }
 
 .suggestion-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
 .suggestion-chip {
-  background: rgba(129,140,248,0.14); color: #A5B4FC; border: none; border-radius: 20px;
+  background: rgba(129,140,248,0.14); color: var(--t-soft, #A5B4FC); border: none; border-radius: 20px;
   padding: 7px 13px; font-size: 12px; font-weight: 600; cursor: pointer;
 }
 .suggestion-chip:hover { background: rgba(129,140,248,0.22); }
@@ -942,7 +942,7 @@ button, input, select, textarea { font-family: inherit; }
 .chat-input-row { display: flex; gap: 8px; margin-top: 12px; }
 .chat-input-row input {
   flex: 1; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--border);
-  background: rgba(255,255,255,0.02); color: var(--ink);
+  background: rgba(var(--t-ink-rgb, 255,255,255),0.02); color: var(--ink);
   font-size: 13.5px; outline: none;
 }
 .chat-input-row input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(52,211,153,0.15); }
@@ -961,7 +961,7 @@ button, input, select, textarea { font-family: inherit; }
 .lang-toggle { display: flex; gap: 8px; }
 .lang-toggle button {
   flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border);
-  background: rgba(255,255,255,0.02); font-size: 13px; font-weight: 700; cursor: pointer; color: var(--muted);
+  background: rgba(var(--t-ink-rgb, 255,255,255),0.02); font-size: 13px; font-weight: 700; cursor: pointer; color: var(--muted);
 }
 .lang-toggle button.active { border-color: var(--primary); background: rgba(52,211,153,0.14); color: var(--primary); }
 
@@ -991,7 +991,7 @@ button, input, select, textarea { font-family: inherit; }
 .achievements-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 @media (max-width: 599px) { .achievements-grid { grid-template-columns: repeat(2, 1fr); } }
 .achievement-card {
-  background: rgba(255,255,255,0.03); border-radius: 12px; padding: 14px 8px; text-align: center;
+  background: rgba(var(--t-ink-rgb, 255,255,255),0.03); border-radius: 12px; padding: 14px 8px; text-align: center;
 }
 .achievement-card.unlocked { background: linear-gradient(135deg, rgba(251,191,36,0.18), rgba(251,191,36,0.08)); box-shadow: 0 2px 12px rgba(251,191,36,0.15); }
 .achievement-icon { font-size: 22px; margin-bottom: 6px; }
@@ -1001,8 +1001,8 @@ button, input, select, textarea { font-family: inherit; }
 .arch-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
 @media (max-width: 599px) { .arch-row { grid-template-columns: 1fr; } }
 .arch-box { background: rgba(129,140,248,0.1); border-radius: 12px; padding: 12px 14px; }
-.arch-box-muted { background: rgba(255,255,255,0.03); }
-.arch-label { font-size: 11.5px; font-weight: 700; color: #A5B4FC; margin-bottom: 6px; }
+.arch-box-muted { background: rgba(var(--t-ink-rgb, 255,255,255),0.03); }
+.arch-label { font-size: 11.5px; font-weight: 700; color: var(--t-soft, #A5B4FC); margin-bottom: 6px; }
 .arch-box-muted .arch-label { color: var(--muted); }
 .arch-flow { font-size: 12px; color: var(--body); font-family: 'SF Mono', 'Courier New', monospace; }
 .arch-note { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
@@ -1088,7 +1088,7 @@ button, input, select, textarea { font-family: inherit; }
   font-size: 13px;
   color: var(--body);
 }
-.chat-thread-item:hover { background: rgba(255,255,255,0.05); }
+.chat-thread-item:hover { background: rgba(var(--t-ink-rgb, 255,255,255),0.05); }
 .chat-thread-item.active { background: var(--gradient-brand); color: var(--primary-ink); }
 .chat-thread-item.active .chat-thread-actions button { color: rgba(6,18,13,0.75); }
 
@@ -1110,12 +1110,12 @@ button, input, select, textarea { font-family: inherit; }
   background: none; border: none; cursor: pointer;
   color: var(--muted); padding: 3px; border-radius: 5px; display: flex;
 }
-.chat-thread-actions button:hover { background: rgba(255,255,255,0.1); }
+.chat-thread-actions button:hover { background: rgba(var(--t-ink-rgb, 255,255,255),0.1); }
 
 .chat-thread-rename { display: flex; align-items: center; gap: 4px; width: 100%; }
 .chat-thread-rename input {
   flex: 1; font-size: 12.5px; padding: 4px 6px; border-radius: 6px;
-  border: 1px solid var(--primary); outline: none; background: rgba(255,255,255,0.03); color: var(--ink);
+  border: 1px solid var(--primary); outline: none; background: rgba(var(--t-ink-rgb, 255,255,255),0.03); color: var(--ink);
 }
 .chat-thread-rename button { background: none; border: none; cursor: pointer; color: var(--ink); display: flex; }
 
@@ -1165,7 +1165,7 @@ button, input, select, textarea { font-family: inherit; }
   gap: 8px;
 }
 .chat-starter-chip {
-  background: rgba(255,255,255,0.03);
+  background: rgba(var(--t-ink-rgb, 255,255,255),0.03);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px 12px;
@@ -1194,7 +1194,7 @@ button, input, select, textarea { font-family: inherit; }
   border-bottom-right-radius: 4px;
 }
 .chat-bubble-row.assistant .chat-bubble {
-  background: rgba(255,255,255,0.04);
+  background: rgba(var(--t-ink-rgb, 255,255,255),0.04);
   color: var(--body);
   border: 1px solid var(--border);
   border-bottom-left-radius: 4px;
@@ -1205,7 +1205,7 @@ button, input, select, textarea { font-family: inherit; }
 .chat-markdown ul, .chat-markdown ol { margin: 4px 0 8px; padding-left: 20px; }
 .chat-markdown li { margin-bottom: 3px; }
 .chat-markdown code {
-  background: rgba(255,255,255,0.1);
+  background: rgba(var(--t-ink-rgb, 255,255,255),0.1);
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 12.5px;
@@ -1238,7 +1238,7 @@ button, input, select, textarea { font-family: inherit; }
   background: none; border: none; cursor: pointer; color: var(--muted);
   padding: 4px; border-radius: 5px; display: flex;
 }
-.chat-msg-actions button:hover { background: rgba(255,255,255,0.1); color: var(--ink); }
+.chat-msg-actions button:hover { background: rgba(var(--t-ink-rgb, 255,255,255),0.1); color: var(--ink); }
 
 .chat-thinking { display: flex; gap: 4px; padding: 15px 16px; align-items: center; }
 .chat-dot {
@@ -1282,7 +1282,7 @@ button, input, select, textarea { font-family: inherit; }
 .chat-input-row input {
   flex: 1;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.03);
+  background: rgba(var(--t-ink-rgb, 255,255,255),0.03);
   color: var(--ink);
   border-radius: 24px;
   padding: 12px 18px;

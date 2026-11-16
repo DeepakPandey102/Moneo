@@ -1,0 +1,148 @@
+/* =====================================================================
+   Moneo themes. Picked in Settings → Theme; see src/utils/theme.js.
+   The CSS in index.css and moneo.css reads these --t-* variables, with
+   the original purple values as fallbacks (= "Midnight Violet").
+   ===================================================================== */
+
+/* Smooth colour change when switching theme */
+.mo-shell, .mo-sidebar, .mo-topbar, .card, .db-card, .db-stat, .db-ask, .aa-side, .aa-composer {
+  transition: background-color .45s ease, border-color .45s ease, color .45s ease;
+}
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+
+/* ---------------- Aurora Light ---------------- */
+html[data-skin="aurora"] {
+  --t-bg: #F6F5FB; --t-bg2: #EFECF8; --t-surface: #FFFFFF; --t-surface2: #F1EEFB;
+  --t-strong: #1A1533; --t-body: #3F3A5C; --t-muted: #6A6488;
+  --t-accent: #6D4AFF; --t-accent-strong: #5B3FD8; --t-accent-deep: #4C2FC9; --t-accent2: #8B5CF6; --t-accent3: #EC4899;
+  --t-soft: #5B3FD8; --t-soft2: #6D4AFF;
+  --t-accent-rgb: 109,74,255; --t-soft-rgb: 109,74,255; --t-ink-rgb: 26,21,51;
+  --t-bg-rgb: 246,245,251; --t-surface-rgb: 255,255,255; --t-scrim-rgb: 30,24,60;
+  --t-white-surface: #FFFFFF; --t-card-end: #FFFFFF;
+  --t-sky: radial-gradient(ellipse at 78% 0%, rgba(236,72,153,.22), transparent 55%), radial-gradient(ellipse at 20% 10%, rgba(109,74,255,.20), transparent 60%), linear-gradient(180deg, #ECE6FF, #F6F5FB);
+
+  --primary: #6D4AFF; --primary-dim: #5B3FD8; --primary-ink: #FFFFFF;
+  --bg: #F6F5FB; --bg-elevated: #FFFFFF; --card: #FFFFFF; --card-solid: #FFFFFF; --card-hover: #F7F5FF;
+  --ink: #1A1533; --body: #3F3A5C; --muted: #6A6488; --muted-dim: #8F89AA;
+  --border: rgba(91,63,216,0.14); --border-strong: rgba(91,63,216,0.26);
+  --glass: rgba(91,63,216,0.04); --glass-strong: rgba(91,63,216,0.07);
+  --gradient-brand: linear-gradient(90deg, #6D4AFF 0%, #8B5CF6 55%, #EC4899 100%);
+  --gradient-brand-soft: linear-gradient(135deg, rgba(109,74,255,0.12), rgba(236,72,153,0.10));
+  --gradient-page: none;
+  --shadow-card: 0 1px 2px rgba(26,21,51,0.04), 0 10px 26px rgba(91,63,216,0.08);
+  --shadow-elevated: 0 20px 50px rgba(26,21,51,0.14);
+  --shadow-glow: 0 10px 26px rgba(109,74,255,0.28);
+  color-scheme: light;
+}
+
+/* ---------------- Clean Paper ---------------- */
+html[data-skin="paper"] {
+  --t-bg: #FAF9F5; --t-bg2: #F3F2EC; --t-surface: #FFFFFF; --t-surface2: #F2F1EB;
+  --t-strong: #16161A; --t-body: #3C3C44; --t-muted: #6B6B73;
+  --t-accent: #1F1F24; --t-accent-strong: #16161A; --t-accent-deep: #0E0E10; --t-accent2: #3A3A44; --t-accent3: #55555F;
+  --t-soft: #2B2B33; --t-soft2: #3A3A44;
+  --t-accent-rgb: 22,22,26; --t-soft-rgb: 22,22,26; --t-ink-rgb: 22,22,26;
+  --t-bg-rgb: 250,249,245; --t-surface-rgb: 255,255,255; --t-scrim-rgb: 20,20,24;
+  --t-white-surface: #FFFFFF; --t-card-end: #FFFFFF;
+  --t-sky: linear-gradient(180deg, #F1F0EA, #FAF9F5);
+
+  --primary: #1F1F24; --primary-dim: #16161A; --primary-ink: #FFFFFF;
+  --bg: #FAF9F5; --bg-elevated: #FFFFFF; --card: #FFFFFF; --card-solid: #FFFFFF; --card-hover: #FBFBF8;
+  --ink: #16161A; --body: #3C3C44; --muted: #6B6B73; --muted-dim: #8E8E96;
+  --border: rgba(22,22,26,0.10); --border-strong: rgba(22,22,26,0.18);
+  --glass: rgba(22,22,26,0.03); --glass-strong: rgba(22,22,26,0.06);
+  --gradient-brand: linear-gradient(90deg, #1F1F24 0%, #3A3A44 100%);
+  --gradient-brand-soft: linear-gradient(135deg, rgba(22,22,26,0.06), rgba(22,22,26,0.03));
+  --gradient-page: none;
+  --shadow-card: 0 1px 2px rgba(22,22,26,0.05), 0 8px 22px rgba(22,22,26,0.06);
+  --shadow-elevated: 0 18px 44px rgba(22,22,26,0.14);
+  --shadow-glow: 0 8px 20px rgba(22,22,26,0.18);
+  color-scheme: light;
+}
+
+/* ---------------- Black Gold ---------------- */
+html[data-skin="gold"] {
+  --t-bg: #0C0C0A; --t-bg2: #10100D; --t-surface: #171714; --t-surface2: #22221D;
+  --t-strong: #FAF7EE; --t-body: #D6D0BE; --t-muted: #A59E86;
+  --t-accent: #B8860B; --t-accent-strong: #9A7208; --t-accent-deep: #6E5206; --t-accent2: #C9A227; --t-accent3: #D97706;
+  --t-soft: #F1D27A; --t-soft2: #F7E3A6;
+  --t-accent-rgb: 201,162,39; --t-soft-rgb: 241,210,122; --t-ink-rgb: 255,255,255;
+  --t-bg-rgb: 12,12,10; --t-surface-rgb: 23,23,20; --t-scrim-rgb: 6,6,4;
+  --t-white-surface: #FFFFFF; --t-card-end: #121210;
+  --t-sky: radial-gradient(ellipse at 78% 0%, rgba(234,179,8,.20), transparent 55%), linear-gradient(180deg, #24200F, #0C0C0A);
+
+  --primary: #B8860B; --primary-dim: #9A7208; --primary-ink: #FFFFFF;
+  --bg: #0C0C0A; --bg-elevated: #121210; --card: #171714; --card-solid: #171714; --card-hover: #1D1D19;
+  --ink: #FAF7EE; --body: #D6D0BE; --muted: #A59E86; --muted-dim: #7A7564;
+  --border: rgba(234,179,8,0.14); --border-strong: rgba(234,179,8,0.26);
+  --glass: rgba(255,255,255,0.03); --glass-strong: rgba(255,255,255,0.06);
+  --gradient-brand: linear-gradient(90deg, #9A7208 0%, #C9A227 55%, #D97706 100%);
+  --gradient-brand-soft: linear-gradient(135deg, rgba(201,162,39,0.16), rgba(217,119,6,0.10));
+  --gradient-page: none;
+  --shadow-glow: 0 10px 28px rgba(201,162,39,0.30);
+  color-scheme: dark;
+}
+
+/* The purple mountain picture becomes a soft sky in the theme's colours */
+html[data-skin] .mo-sky svg { opacity: 0; }
+html[data-skin] .mo-sky { background: var(--t-sky); }
+html[data-skin] .mo-sidebar-wave { opacity: 0.18; filter: grayscale(1); }
+
+/* Light themes: softer shadows and readable controls */
+html[data-skin="aurora"] .db-ask,
+html[data-skin="paper"] .db-ask { box-shadow: 0 18px 44px rgba(26,21,51,0.10); }
+html[data-skin="aurora"] .db-bubble, html[data-skin="paper"] .db-bubble { background: var(--t-surface2); }
+html[data-skin="aurora"] .db-bubble::before, html[data-skin="paper"] .db-bubble::before { background: var(--t-surface2); }
+html[data-skin="aurora"] .db-robot, html[data-skin="paper"] .db-robot { filter: drop-shadow(0 8px 16px rgba(26,21,51,0.12)); }
+html[data-skin="aurora"] .mo-btn-white, html[data-skin="paper"] .mo-btn-white { background: var(--t-accent-strong); color: #FFFFFF; }
+html[data-skin="aurora"] .bottom-nav, html[data-skin="paper"] .bottom-nav { background: rgba(255,255,255,0.92); }
+html[data-skin="aurora"] .aa-code pre, html[data-skin="paper"] .aa-code pre { background: #1A1533; color: #F5F3FB; }
+html[data-skin="paper"] .db-name { background: none; color: var(--t-strong); -webkit-text-fill-color: currentColor; text-decoration: underline; text-decoration-thickness: 4px; text-underline-offset: 6px; text-decoration-color: #6D4AFF; }
+html[data-skin="paper"] .db-new { color: #16161A; }
+html[data-skin="paper"] .mo-side-link.active { background: #16161A; box-shadow: 0 8px 20px rgba(22,22,26,0.22); }
+
+/* ---------------- Theme picker (Settings) ---------------- */
+.skin-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .skin-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.skin-card {
+  position: relative; display: flex; flex-direction: column; gap: 10px; padding: 10px 10px 14px; border-radius: 16px; cursor: pointer; text-align: left;
+  background: var(--card); border: 2px solid var(--border); color: var(--ink); font: inherit;
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.skin-card:hover { transform: translateY(-3px); border-color: var(--border-strong); }
+.skin-card[aria-pressed="true"] { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(var(--t-accent-rgb, 124,92,255),0.18); }
+.skin-card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.skin-preview { height: 86px; border-radius: 11px; overflow: hidden; display: grid; grid-template-columns: 26% 1fr; border: 1px solid rgba(128,128,128,0.22); }
+.skin-preview .sp-side { display: flex; flex-direction: column; gap: 5px; padding: 8px 6px; }
+.skin-preview .sp-side i { height: 6px; border-radius: 3px; opacity: .35; }
+.skin-preview .sp-side i:first-child { opacity: 1; height: 8px; }
+.skin-preview .sp-main { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
+.skin-preview .sp-main b { height: 8px; width: 60%; border-radius: 4px; }
+.skin-preview .sp-row { display: flex; gap: 5px; flex: 1; }
+.skin-preview .sp-row span { flex: 1; border-radius: 6px; }
+.skin-name { display: flex; flex-direction: column; gap: 2px; padding: 0 4px; }
+.skin-name b { font-size: 14.5px; }
+.skin-name small { font-size: 12.5px; color: var(--muted); }
+.skin-check {
+  position: absolute; top: 16px; right: 16px; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--primary); color: #FFFFFF; transform: scale(0); transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+}
+.skin-card[aria-pressed="true"] .skin-check { transform: scale(1); }
+@media (prefers-reduced-motion: reduce) { .skin-card, .skin-check { transition: none; } }
+
+/* Decorative waves follow the theme colour */
+html[data-skin] .mo-sidebar-wave { opacity: 0.35; filter: none; }
+html[data-skin] .mo-sidebar-wave path, html[data-skin] .db-ask-wave path { fill: var(--t-accent); }
+html[data-skin] .db-ask-wave { opacity: 0.5; }
+
+/* Light themes: Quick Action tiles get dark text on their pale colours */
+html[data-skin="aurora"] .db-tile:not(.purple), html[data-skin="paper"] .db-tile:not(.purple) { color: var(--t-strong); }
+html[data-skin="aurora"] .db-tile.blue, html[data-skin="paper"] .db-tile.blue { background: linear-gradient(160deg, rgba(59,130,246,0.18), rgba(59,130,246,0.06)); }
+html[data-skin="aurora"] .db-tile.green, html[data-skin="paper"] .db-tile.green { background: linear-gradient(160deg, rgba(16,185,129,0.18), rgba(16,185,129,0.06)); }
+html[data-skin="aurora"] .db-tile.amber, html[data-skin="paper"] .db-tile.amber { background: linear-gradient(160deg, rgba(245,158,11,0.20), rgba(245,158,11,0.06)); }
+html[data-skin="aurora"] .db-chip, html[data-skin="paper"] .db-chip { color: var(--t-strong); background: var(--t-surface); }
+html[data-skin="aurora"] .db-ask-input input, html[data-skin="paper"] .db-ask-input input { color: var(--t-strong); }
+html[data-skin] .db-tile.purple { color: #FFFFFF; }
+html[data-skin] .db-tile.purple small { color: rgba(255,255,255,0.78); }
+html[data-skin="gold"] .mo-side-link.active { background: linear-gradient(90deg, #9A7208, #C9A227); box-shadow: 0 10px 26px rgba(201,162,39,0.35); }
+html[data-skin="aurora"] .mo-side-link.active { background: linear-gradient(90deg, #6D4AFF, #8B5CF6 60%, #EC4899); }
